@@ -104,3 +104,4 @@ JDBC URL: `jdbc:h2:mem:gymdb`
 
 - [x] Project scaffold (pom.xml, application.properties, GymApplication.java)
 - [x] Entity model classes (User, Admin, Receptionist, Member, Trainer, MembershipPlan, Membership, Payment, WorkoutPlan, Attendance, Report)
+- [x] Repository interfaces (UserRepository, MemberRepository, TrainerRepository, MembershipPlanRepository, MembershipRepository, PaymentRepository, WorkoutPlanRepository, AttendanceRepository, ReportRepository)
