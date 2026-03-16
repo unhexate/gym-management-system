@@ -2,11 +2,13 @@ package com.gym.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "reports")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +25,7 @@ public class Report {
     @Column(name = "generated_date", nullable = false)
     private LocalDate generatedDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "generated_by")
     private User generatedBy;
 }
