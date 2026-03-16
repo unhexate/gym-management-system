@@ -25,7 +25,7 @@ The project follows **Spring MVC** with four layers:
 Controller → Service → Repository → Database
 ```
 
-Design patterns are isolated in the `pattern/` package.
+Design pattern classes live inside `service/` — as natural parts of the architecture, not in a separate showcase folder.
 
 ---
 
@@ -46,28 +46,6 @@ Design patterns are isolated in the `pattern/` package.
 - **DIP** – Services depend on repository interfaces and the `PricingStrategy` abstraction
 - **OCP** – New pricing strategies or user roles require no modification of existing classes
 - **SoC** – MVC layers + isolated `pattern/` package + dedicated `GlobalExceptionHandler`
-
----
-
-## Project Structure
-
-```
-gym-management-system/
-├── src/main/java/com/gym/
-│   ├── GymApplication.java
-│   ├── controller/          # REST controllers (6 files)
-│   ├── model/               # JPA entities (11 files)
-│   ├── repository/          # Spring Data JPA repos (9 files)
-│   ├── service/             # Business logic (6 files)
-│   ├── pattern/
-│   │   ├── factory/         # UserFactory
-│   │   ├── facade/          # GymManagementFacade
-│   │   ├── strategy/        # PricingStrategy, BasicPricing, PremiumPricing
-│   │   └── template/        # BaseCrudService
-│   └── exception/           # GlobalExceptionHandler
-└── src/main/resources/
-    └── application.properties
-```
 
 ---
 
@@ -100,8 +78,37 @@ JDBC URL: `jdbc:h2:mem:gymdb`
 
 ---
 
+## Project Structure (Actual)
+
+```
+gym-management-system/
+├── src/main/java/com/gym/
+│   ├── GymApplication.java
+│   ├── controller/          # 6 REST controllers
+│   ├── dto/                 # Request DTOs with Bean Validation
+│   ├── exception/           # ApiResponse, custom exceptions, GlobalExceptionHandler
+│   ├── model/               # 11 JPA entities
+│   ├── repository/          # 9 Spring Data JPA interfaces
+│   └── service/             # Business logic + all design pattern classes
+│       ├── UserFactory.java          # Factory Pattern
+│       ├── BaseCrudService.java      # Template Method Pattern (abstract base)
+│       ├── PricingStrategy.java      # Strategy Pattern (interface)
+│       ├── BasicPricing.java         # Strategy – no discount
+│       ├── PremiumPricing.java       # Strategy – 20% discount
+│       └── GymManagementFacade.java  # Facade Pattern
+```
+
+---
+
 ## Progress
 
 - [x] Project scaffold (pom.xml, application.properties, GymApplication.java)
-- [x] Entity model classes (User, Admin, Receptionist, Member, Trainer, MembershipPlan, Membership, Payment, WorkoutPlan, Attendance, Report)
-- [x] Repository interfaces (UserRepository, MemberRepository, TrainerRepository, MembershipPlanRepository, MembershipRepository, PaymentRepository, WorkoutPlanRepository, AttendanceRepository, ReportRepository)
+- [x] 11 JPA entity classes (User hierarchy + domain models)
+- [x] 9 Spring Data JPA repository interfaces
+- [x] Request/response DTOs with Bean Validation
+- [x] Exception handling (ApiResponse, GlobalExceptionHandler, custom exceptions)
+- [x] Factory Pattern – UserFactory + UserService (POST /api/users)
+- [x] Template Method Pattern – BaseCrudService (base for Membership/Payment/Workout/Attendance services)
+- [x] Strategy Pattern – PricingStrategy + BasicPricing + PremiumPricing (POST /api/memberships)
+- [x] Facade Pattern – GymManagementFacade + ReportService (POST /api/payments, GET /api/reports)
+- [x] 6 REST controllers covering all 10 API endpoints
