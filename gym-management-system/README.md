@@ -78,6 +78,24 @@ JDBC URL: `jdbc:h2:mem:gymdb`
 
 ---
 
+## Running Tests
+
+```bash
+mvn test
+```
+
+| Test class | Type | Tests |
+|------------|------|-------|
+| `UserFactoryTest` | Unit | 6 |
+| `PricingStrategyTest` | Unit | 3 |
+| `BaseCrudServiceTest` | Unit | 3 |
+| `UserServiceTest` | Service (Mockito) | 5 |
+| `MembershipServiceTest` | Service (Mockito) | 7 |
+| `GymApiIntegrationTest` | Integration (MockMvc) | 15 |
+| **Total** | | **39** |
+
+---
+
 ## Project Structure (Actual)
 
 ```
@@ -112,3 +130,7 @@ gym-management-system/
 - [x] Strategy Pattern – PricingStrategy + BasicPricing + PremiumPricing (POST /api/memberships)
 - [x] Facade Pattern – GymManagementFacade + ReportService (POST /api/payments, GET /api/reports)
 - [x] 6 REST controllers covering all 10 API endpoints
+- [x] Unit tests: UserFactory (6), PricingStrategy (3), BaseCrudService (3)
+- [x] Service tests: UserService (5), MembershipService (7) – Mockito
+- [x] Integration tests: all 10 endpoints via MockMvc + H2 (15 tests)
+- [x] **39 tests – 0 failures**
