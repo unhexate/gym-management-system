@@ -11,7 +11,8 @@ A Java-based gym management system built with **Spring Boot 3.x** and **Spring M
 | Java | 17+ |
 | Spring Boot | 3.2.0 |
 | Spring MVC / Spring Data JPA | (included with Boot) |
-| H2 Database | runtime |
+| SQLite | 3.45.1.0 (runtime) |
+| Hibernate Community Dialects | 6.4.1.Final |
 | Lombok | latest |
 | Maven | build tool |
 
@@ -73,8 +74,8 @@ cd gym-management-system
 mvn spring-boot:run
 ```
 
-H2 Console: [http://localhost:8080/h2-console](http://localhost:8080/h2-console)  
-JDBC URL: `jdbc:h2:mem:gymdb`
+Data is persisted to `gymdb.db` in the project root (excluded from git via `.gitignore`).  
+Tests use an isolated SQLite in-memory database (`file::memory:?cache=shared`) defined in `src/test/resources/application.properties`.
 
 ---
 

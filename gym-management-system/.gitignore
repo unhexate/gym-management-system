@@ -40,10 +40,8 @@ Thumbs.db
 *.log
 logs/
 
-# H2 database files (if persisted to disk)
+# SQLite database files
 *.db
-*.mv.db
-*.trace.db
 
 # Spring Boot devtools restart trigger
 .reloadtrigger
