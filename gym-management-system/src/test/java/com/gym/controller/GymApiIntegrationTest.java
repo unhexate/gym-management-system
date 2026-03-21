@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -218,12 +219,42 @@ class GymApiIntegrationTest {
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
     }
 
+    @Test
+    @Order(10)
+    @DisplayName("GET /api/memberships/me – member gets own active membership")
+    void getMyMembershipAsMember() throws Exception {
+        Long memberId = createMember("Mia", "mia@gym.com");
+        Long planId   = seedPlan("BASIC", 1, 100.0);
+
+        mockMvc.perform(post("/api/memberships")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(Map.of("memberId", memberId, "planId", planId))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/memberships/me")
+                        .with(user("mia@gym.com").roles("MEMBER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.member.id").value(memberId));
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("GET /api/memberships/member/{id} – member role is forbidden")
+    void memberCannotAccessMembershipByIdEndpoint() throws Exception {
+        Long memberId = createMember("Noah", "noah@gym.com");
+
+        mockMvc.perform(get("/api/memberships/member/" + memberId)
+                        .with(user("noah@gym.com").roles("MEMBER")))
+                .andExpect(status().isForbidden());
+    }
+
     // ------------------------------------------------------------------
     // 5 & 6. Payment endpoints
     // ------------------------------------------------------------------
 
     @Test
-    @Order(10)
+        @Order(12)
     @DisplayName("POST /api/payments – process payment returns 201")
     void processPayment() throws Exception {
         Long memberId = createMember("Dave", "dave2@gym.com");
@@ -248,7 +279,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(11)
+        @Order(13)
     @DisplayName("GET /api/payments/member/{id} – returns payment history list")
     void paymentHistory() throws Exception {
         Long memberId = createMember("Eve", "eve2@gym.com");
@@ -274,7 +305,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-    @Order(12)
+        @Order(14)
     @DisplayName("POST /api/workouts – trainer creates workout plan returns 201")
     void createWorkout() throws Exception {
         Long memberId  = createMember("Frank",  "frank2@gym.com");
@@ -293,7 +324,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(13)
+        @Order(15)
     @DisplayName("GET /api/workouts/member/{id} – returns member workout plan")
     void getWorkout() throws Exception {
         Long memberId  = createMember("Hank",  "hank2@gym.com");
@@ -315,7 +346,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-    @Order(14)
+        @Order(16)
     @DisplayName("POST /api/attendance – marks attendance returns 201")
     void markAttendance() throws Exception {
         Long memberId = createMember("Jack", "jack2@gym.com");
@@ -332,7 +363,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-    @Order(15)
+        @Order(17)
     @DisplayName("GET /api/reports – returns summary report (Facade Pattern)")
     void getReport() throws Exception {
         mockMvc.perform(get("/api/reports"))

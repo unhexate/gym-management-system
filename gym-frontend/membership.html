@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Membership – GymMS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav></nav>
+
+<div class="page">
+  <h1>Membership</h1>
+
+  <!-- Enroll -->
+  <div class="card" id="enrollCard">
+    <h2>Enroll in a Plan</h2>
+    <form id="enrollForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="memberId">Member ID</label>
+          <input id="memberId" type="number" placeholder="1" required />
+        </div>
+        <div class="form-group">
+          <label for="planId">Plan ID</label>
+          <input id="planId" type="number" placeholder="1" required />
+        </div>
+      </div>
+      <br />
+      <button type="submit" class="btn btn-primary">Enroll</button>
+    </form>
+  </div>
+
+  <!-- View membership -->
+  <div class="card">
+    <h2>View Active Membership</h2>
+    <div class="row">
+      <div class="form-group" style="flex:1;min-width:140px;">
+        <label for="lookupId">Member ID</label>
+        <input id="lookupId" type="number" placeholder="1" />
+      </div>
+      <button id="lookupBtn" class="btn btn-secondary">Look Up</button>
+    </div>
+    <br />
+    <div id="membershipInfo" style="display:none;">
+      <table>
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody id="membershipBody"></tbody>
+      </table>
+    </div>
+    <p id="membershipEmpty" class="empty" style="display:none;">No active membership found for this member. If you just created this account, ask reception/admin to enroll a plan first.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="auth.js"></script>
+<script src="api.js"></script>
+<script>
+  const session = requireRole(['ADMIN', 'RECEPTIONIST', 'TRAINER', 'MEMBER']);
+  if (!session) throw new Error('redirect');
+
+  const canEnrollMembership = hasAnyRole(['ADMIN', 'RECEPTIONIST']);
+  document.getElementById('enrollCard').style.display = canEnrollMembership ? '' : 'none';
+
+  document.getElementById('enrollForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      const data = await enrollMembership({
+        memberId: +document.getElementById('memberId').value,
+        planId:   +document.getElementById('planId').value,
+      });
+      toast(`Enrolled! Membership ID: ${data.id}`);
+      e.target.reset();
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  document.getElementById('lookupBtn').addEventListener('click', async () => {
+    const isMember = session.role === 'MEMBER';
+    const id = document.getElementById('lookupId').value;
+    if (!isMember && !id) return toast('Enter a member ID', 'err');
+    try {
+      const d = isMember ? await getMyMembership() : await getMembership(id);
+      const info = document.getElementById('membershipInfo');
+      const empty = document.getElementById('membershipEmpty');
+      if (!d) { info.style.display = 'none'; empty.style.display = ''; return; }
+      document.getElementById('membershipBody').innerHTML = Object.entries(d)
+        .map(([k, v]) => `<tr><td><strong>${k}</strong></td><td>${formatMembershipValue(k, v)}</td></tr>`).join('');
+      info.style.display = '';
+      empty.style.display = 'none';
+    } catch (err) {
+      const info = document.getElementById('membershipInfo');
+      const empty = document.getElementById('membershipEmpty');
+      info.style.display = 'none';
+
+      const isNotFound = /No active membership found|not found/i.test(err.message || '');
+      if (isNotFound) {
+        empty.style.display = '';
+      } else {
+        empty.style.display = 'none';
+        toast(err.message || 'Unable to load membership right now.', 'err');
+      }
+    }
+  });
+
+  function formatMembershipValue(key, value) {
+    if (value == null) return '—';
+
+    if (key === 'member' && typeof value === 'object') {
+      const memberName = value.name || 'Unknown';
+      const memberId = value.id != null ? `#${value.id}` : '—';
+      const memberEmail = value.email || '—';
+      return `${memberName} (${memberId}, ${memberEmail})`;
+    }
+
+    if (key === 'plan' && typeof value === 'object') {
+      const planName = value.planName || 'Unknown';
+      const planId = value.id != null ? `#${value.id}` : '—';
+      const planPrice = value.price != null ? `₹${value.price}` : '—';
+      const planDuration = value.durationMonths != null ? `${value.durationMonths} months` : '—';
+      return `${planName} (${planId}, ${planPrice}, ${planDuration})`;
+    }
+
+    if (typeof value === 'object') {
+      return `<pre style="font-size:0.8rem;white-space:pre-wrap;">${JSON.stringify(value, null, 2)}</pre>`;
+    }
+
+    return String(value);
+  }
+
+  if (session.role === 'MEMBER') {
+    const lookupGroup = document.getElementById('lookupId').closest('.form-group');
+    if (lookupGroup) lookupGroup.style.display = 'none';
+    document.getElementById('lookupBtn').textContent = 'Load My Membership';
+    document.getElementById('lookupBtn').click();
+  }
+</script>
+</body>
+</html>

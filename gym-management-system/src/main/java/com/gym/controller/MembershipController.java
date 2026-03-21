@@ -2,13 +2,18 @@ package com.gym.controller;
 
 import com.gym.dto.EnrollMembershipRequest;
 import com.gym.exception.ApiResponse;
+import com.gym.exception.BadRequestException;
 import com.gym.model.Membership;
+import com.gym.model.User;
 import com.gym.service.MembershipService;
+import com.gym.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 /**
  * REST controller for membership enrollment and status.
@@ -21,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class MembershipController {
 
     private final MembershipService membershipService;
+    private final UserService userService;
 
     /** POST /api/memberships – enroll a member in a plan (Strategy + Template Method) */
     @PostMapping
@@ -36,6 +42,18 @@ public class MembershipController {
     public ResponseEntity<ApiResponse<Membership>> getActiveMembership(
             @PathVariable Long memberId) {
         Membership membership = membershipService.getActiveMembership(memberId);
+        return ResponseEntity.ok(ApiResponse.success(membership));
+    }
+
+    /** GET /api/memberships/me – get active membership for currently authenticated member */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<Membership>> getMyActiveMembership(Principal principal) {
+        User user = userService.findByEmail(principal.getName());
+        if (!"MEMBER".equalsIgnoreCase(user.getRole())) {
+            throw new BadRequestException("Only members can use /api/memberships/me");
+        }
+
+        Membership membership = membershipService.getActiveMembership(user.getId());
         return ResponseEntity.ok(ApiResponse.success(membership));
     }
 }

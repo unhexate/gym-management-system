@@ -39,6 +39,7 @@ function updateProfile(userId, data)    { return put(`/api/users/${userId}/profi
 // ── Memberships ────────────────────────────────────────
 function enrollMembership(data)         { return post('/api/memberships', data); }
 function getMembership(memberId)        { return get(`/api/memberships/member/${memberId}`); }
+function getMyMembership()              { return get('/api/memberships/me'); }
 
 // ── Payments ───────────────────────────────────────────
 function processPayment(data)           { return post('/api/payments', data); }
