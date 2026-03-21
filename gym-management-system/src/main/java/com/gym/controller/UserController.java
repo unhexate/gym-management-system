@@ -9,7 +9,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 /**
  * REST controller for user registration and profile management.
@@ -26,10 +31,19 @@ public class UserController {
     /** POST /api/users – register a new user (uses Factory Pattern internally) */
     @PostMapping
     public ResponseEntity<ApiResponse<User>> registerUser(
-            @Valid @RequestBody CreateUserRequest request) {
-        User created = userService.registerUser(request);
+            @Valid @RequestBody CreateUserRequest request,
+            Authentication authentication) {
+        String creatorRole = extractRole(authentication);
+        User created = userService.registerUser(request, creatorRole);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(created, "User registered successfully"));
+    }
+
+    /** GET /api/users/me – returns the currently authenticated user */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<User>> me(Principal principal) {
+        User user = userService.findByEmail(principal.getName());
+        return ResponseEntity.ok(ApiResponse.success(user));
     }
 
     /** PUT /api/users/{userId}/profile – update profile fields */
@@ -39,5 +53,19 @@ public class UserController {
             @RequestBody UpdateProfileRequest request) {
         User updated = userService.updateProfile(userId, request);
         return ResponseEntity.ok(ApiResponse.success(updated, "Profile updated successfully"));
+    }
+
+    private String extractRole(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(authority -> authority.startsWith("ROLE_"))
+                .map(authority -> authority.substring("ROLE_".length()))
+                .findFirst()
+                .orElse(null);
     }
 }

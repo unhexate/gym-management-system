@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
 
@@ -42,7 +43,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        User saved = userService.registerUser(buildRequest("MEMBER"));
+        User saved = userService.registerUser(buildRequest("MEMBER"), "ADMIN");
 
         assertInstanceOf(Member.class, saved);
         assertEquals("Test User", saved.getName());
@@ -55,7 +56,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
         assertThrows(BadRequestException.class,
-                () -> userService.registerUser(buildRequest("MEMBER")));
+            () -> userService.registerUser(buildRequest("MEMBER"), "ADMIN"));
         verify(userRepository, never()).save(any());
     }
 
@@ -68,9 +69,25 @@ class UserServiceTest {
         for (String role : new String[]{"MEMBER", "TRAINER", "ADMIN", "RECEPTIONIST"}) {
             CreateUserRequest req = buildRequest(role);
             req.setEmail(role.toLowerCase() + "@gym.com");
-            User u = userService.registerUser(req);
+            User u = userService.registerUser(req, "ADMIN");
             assertNotNull(u, "Should create user for role " + role);
         }
+    }
+
+    @Test
+    @DisplayName("registerUser blocks receptionist from creating admin")
+    void registerUserReceptionistCannotCreateAdmin() {
+        assertThrows(AccessDeniedException.class,
+                () -> userService.registerUser(buildRequest("ADMIN"), "RECEPTIONIST"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("registerUser public flow only allows MEMBER")
+    void registerUserPublicOnlyMember() {
+        assertThrows(AccessDeniedException.class,
+                () -> userService.registerUser(buildRequest("TRAINER"), null));
+        verify(userRepository, never()).save(any());
     }
 
     @Test
