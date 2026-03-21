@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Users – GymMS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav></nav>
+
+<div class="page">
+  <h1>User Management</h1>
+
+  <!-- Register -->
+  <div class="card">
+    <h2>Register New User</h2>
+    <form id="registerForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input id="name" type="text" placeholder="Jane Doe" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="jane@example.com" required />
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input id="phone" type="text" placeholder="+1 555 0100" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="••••••••" required />
+        </div>
+        <div class="form-group">
+          <label for="role">Role</label>
+          <select id="role" required>
+            <option value="">Select role…</option>
+            <option value="MEMBER">Member</option>
+            <option value="TRAINER">Trainer</option>
+            <option value="RECEPTIONIST">Receptionist</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+      </div>
+      <br />
+      <button type="submit" class="btn btn-primary">Register User</button>
+    </form>
+  </div>
+
+  <!-- Update Profile -->
+  <div class="card">
+    <h2>Update Profile</h2>
+    <form id="updateForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="userId">User ID</label>
+          <input id="userId" type="number" placeholder="1" required />
+        </div>
+        <div class="form-group">
+          <label for="newName">New Name</label>
+          <input id="newName" type="text" placeholder="(leave blank to keep)" />
+        </div>
+        <div class="form-group">
+          <label for="newPhone">New Phone</label>
+          <input id="newPhone" type="text" placeholder="(leave blank to keep)" />
+        </div>
+        <div class="form-group">
+          <label for="newPassword">New Password</label>
+          <input id="newPassword" type="password" placeholder="(leave blank to keep)" />
+        </div>
+      </div>
+      <br />
+      <button type="submit" class="btn btn-secondary">Update Profile</button>
+    </form>
+  </div>
+
+  <!-- Results -->
+  <div class="card" id="resultCard" style="display:none;">
+    <h2>Result</h2>
+    <pre id="resultPre" style="font-size:0.85rem;white-space:pre-wrap;"></pre>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="auth.js"></script>
+<script src="api.js"></script>
+<script>
+  const session = requireRole(['ADMIN', 'RECEPTIONIST']);
+  if (!session) throw new Error('redirect');
+
+  if (session.role === 'RECEPTIONIST') {
+    const roleSelect = document.getElementById('role');
+    roleSelect.innerHTML = `
+      <option value="">Select role…</option>
+      <option value="MEMBER">Member</option>`;
+  }
+
+  document.getElementById('registerForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      const data = await registerUser({
+        name:     document.getElementById('name').value,
+        email:    document.getElementById('email').value,
+        phone:    document.getElementById('phone').value,
+        password: document.getElementById('password').value,
+        role:     document.getElementById('role').value,
+      });
+      showResult(data);
+      toast(`User "${data.name}" registered (ID: ${data.id})`);
+      e.target.reset();
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  document.getElementById('updateForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const uid = document.getElementById('userId').value;
+    try {
+      const data = await updateProfile(uid, {
+        name:     document.getElementById('newName').value || undefined,
+        phone:    document.getElementById('newPhone').value || undefined,
+        password: document.getElementById('newPassword').value || undefined,
+      });
+      showResult(data);
+      toast('Profile updated');
+      e.target.reset();
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  function showResult(data) {
+    document.getElementById('resultCard').style.display = '';
+    document.getElementById('resultPre').textContent = JSON.stringify(data, null, 2);
+  }
+</script>
+</body>
+</html>

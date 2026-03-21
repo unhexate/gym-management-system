@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payments – GymMS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav></nav>
+
+<div class="page">
+  <h1>Payments</h1>
+
+  <!-- Process payment -->
+  <div class="card" id="paymentCard">
+    <h2>Process a Payment</h2>
+    <form id="paymentForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="memberId">Member ID</label>
+          <input id="memberId" type="number" placeholder="1" required />
+        </div>
+        <div class="form-group">
+          <label for="membershipId">Membership ID</label>
+          <input id="membershipId" type="number" placeholder="1" required />
+        </div>
+        <div class="form-group">
+          <label for="amount">Amount (₹)</label>
+          <input id="amount" type="number" step="0.01" placeholder="999.00" required />
+        </div>
+        <div class="form-group">
+          <label for="paymentMode">Payment Mode</label>
+          <select id="paymentMode" required>
+            <option value="">Select…</option>
+            <option value="CASH">Cash</option>
+            <option value="CARD">Card</option>
+            <option value="ONLINE">Online</option>
+          </select>
+        </div>
+      </div>
+      <br />
+      <button type="submit" class="btn btn-success">Process Payment</button>
+    </form>
+  </div>
+
+  <!-- Payment history -->
+  <div class="card">
+    <h2>Payment History</h2>
+    <div class="row">
+      <div class="form-group" style="flex:1;min-width:140px;">
+        <label for="historyMemberId">Member ID</label>
+        <input id="historyMemberId" type="number" placeholder="1" />
+      </div>
+      <button id="historyBtn" class="btn btn-secondary">Load History</button>
+    </div>
+    <br />
+    <div class="table-wrap" id="historyWrap" style="display:none;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Amount</th><th>Mode</th><th>Date</th><th>Membership ID</th></tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+    <p id="historyEmpty" class="empty" style="display:none;">No payments found for this member.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="auth.js"></script>
+<script src="api.js"></script>
+<script>
+  const session = requireRole(['ADMIN', 'RECEPTIONIST', 'MEMBER']);
+  if (!session) throw new Error('redirect');
+
+  const canProcessPayment = hasAnyRole(['ADMIN', 'RECEPTIONIST']);
+  document.getElementById('paymentCard').style.display = canProcessPayment ? '' : 'none';
+
+  document.getElementById('paymentForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      const data = await processPayment({
+        memberId:     +document.getElementById('memberId').value,
+        membershipId: +document.getElementById('membershipId').value,
+        amount:       +document.getElementById('amount').value,
+        paymentMode:   document.getElementById('paymentMode').value,
+      });
+      toast(`Payment recorded (ID: ${data.id})`);
+      e.target.reset();
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  document.getElementById('historyBtn').addEventListener('click', async () => {
+    const isMember = session.role === 'MEMBER';
+    const id = document.getElementById('historyMemberId').value;
+    if (!isMember && !id) return toast('Enter a member ID', 'err');
+    try {
+      const list = isMember ? await getMyPayments() : await getPayments(id);
+      const wrap  = document.getElementById('historyWrap');
+      const empty = document.getElementById('historyEmpty');
+      if (!list || list.length === 0) { wrap.style.display = 'none'; empty.style.display = ''; return; }
+      document.getElementById('historyBody').innerHTML = list.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td>₹${p.amount}</td>
+          <td><span class="badge badge-blue">${p.paymentMode}</span></td>
+          <td>${p.paymentDate ?? '—'}</td>
+          <td>${p.membershipId}</td>
+        </tr>`).join('');
+      wrap.style.display = '';
+      empty.style.display = 'none';
+    } catch (err) {
+      document.getElementById('historyWrap').style.display = 'none';
+      document.getElementById('historyEmpty').style.display = '';
+      toast(err.message, 'err');
+    }
+  });
+
+  if (session.role === 'MEMBER') {
+    const memberIdGroup = document.getElementById('historyMemberId').closest('.form-group');
+    if (memberIdGroup) memberIdGroup.style.display = 'none';
+    document.getElementById('historyBtn').textContent = 'Load My History';
+    document.getElementById('historyBtn').click();
+  }
+</script>
+</body>
+</html>
