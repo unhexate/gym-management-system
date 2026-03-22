@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports – GymMS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav></nav>
+
+<div class="page">
+  <h1>Admin Reports</h1>
+
+  <div style="margin-bottom:1rem;">
+    <button id="loadBtn" class="btn btn-primary">Load Report</button>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="stats" id="statsRow" style="display:none;"></div>
+
+  <!-- Full report data -->
+  <div class="card" id="reportCard" style="display:none;">
+    <h2>Full Report</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Key</th><th>Value</th></tr></thead>
+        <tbody id="reportBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p id="reportEmpty" class="empty" style="display:none;">No report data returned from the server.</p>
+</div>
+
+<div id="toast"></div>
+<script src="auth.js"></script>
+<script src="api.js"></script>
+<script>
+  const session = requireRole(['ADMIN']);
+  if (!session) throw new Error('redirect');
+
+  // Keys to surface as KPI stat cards
+  const KPI_KEYS = ['totalMembers', 'activeMembers', 'totalRevenue', 'pendingPayments',
+                    'totalPayments', 'totalTrainers', 'totalAdmins', 'totalReceptionists'];
+
+  document.getElementById('loadBtn').addEventListener('click', async () => {
+    try {
+      const data = await getReports();
+      if (!data || Object.keys(data).length === 0) {
+        document.getElementById('statsRow').style.display   = 'none';
+        document.getElementById('reportCard').style.display = 'none';
+        document.getElementById('reportEmpty').style.display = '';
+        return;
+      }
+
+      // ── KPI stat cards ────────────────────────────────
+      const statsRow = document.getElementById('statsRow');
+      const kpis = Object.entries(data).filter(([k]) => KPI_KEYS.includes(k));
+      if (kpis.length > 0) {
+        statsRow.innerHTML = kpis.map(([k, v]) => `
+          <div class="stat-card">
+            <div class="value">${v ?? '—'}</div>
+            <div class="label">${camelToLabel(k)}</div>
+          </div>`).join('');
+        statsRow.style.display = '';
+      }
+
+      // ── Full table ────────────────────────────────────
+      document.getElementById('reportBody').innerHTML = Object.entries(data).map(([k, v]) => `
+        <tr>
+          <td><strong>${k}</strong></td>
+          <td>${typeof v === 'object' ? `<pre style="font-size:0.8rem;white-space:pre-wrap;">${JSON.stringify(v, null, 2)}</pre>` : v}</td>
+        </tr>`).join('');
+      document.getElementById('reportCard').style.display = '';
+      document.getElementById('reportEmpty').style.display = 'none';
+
+      toast('Report loaded');
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  function camelToLabel(str) {
+    return str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+  }
+</script>
+</body>
+</html>

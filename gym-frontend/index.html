@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gym Management System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav></nav>
+
+<div class="page">
+  <h1>Welcome to Gym Management System</h1>
+
+  <div class="card">
+    <h2>Quick Navigation</h2>
+    <table>
+      <thead>
+        <tr><th>Section</th><th>Description</th><th></th></tr>
+      </thead>
+      <tbody id="homeLinks"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="auth.js"></script>
+<script src="api.js"></script>
+<script>
+  requireRole(null);
+
+  const HOME_LINKS = [
+    {
+      href: 'users.html',
+      title: 'Users',
+      description: 'Register new staff and members, or update a profile',
+    },
+    {
+      href: 'membership.html',
+      title: 'Membership',
+      description: 'Enroll a member in a plan and view their current membership',
+    },
+    {
+      href: 'payments.html',
+      title: 'Payments',
+      description: 'Process a payment and view payment history for a member',
+    },
+    {
+      href: 'workouts.html',
+      title: 'Workouts',
+      description: 'Create a workout plan for a member and view their schedule',
+    },
+    {
+      href: 'attendance.html',
+      title: 'Attendance',
+      description: 'Mark a member\'s daily check-in',
+    },
+    {
+      href: 'reports.html',
+      title: 'Reports',
+      description: 'View a system-wide summary for admins',
+    },
+  ];
+
+  const allowedPages = new Set(visiblePagesForCurrentRole());
+  document.getElementById('homeLinks').innerHTML = HOME_LINKS
+    .filter(link => allowedPages.has(link.href))
+    .map(link => `
+      <tr>
+        <td><strong>${link.title}</strong></td>
+        <td>${link.description}</td>
+        <td><a href="${link.href}" class="btn btn-secondary btn-sm">Open</a></td>
+      </tr>`)
+    .join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workouts – GymMS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav></nav>
+
+<div class="page">
+  <h1>Workouts</h1>
+
+  <!-- Create plan -->
+  <div class="card" id="createWorkoutCard">
+    <h2>Create Workout Plan</h2>
+    <form id="workoutForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="trainerId">Trainer ID</label>
+          <input id="trainerId" type="number" placeholder="2" required />
+        </div>
+        <div class="form-group">
+          <label for="memberId">Member ID</label>
+          <input id="memberId" type="number" placeholder="1" required />
+        </div>
+        <div class="form-group full">
+          <label for="exercises">Exercises</label>
+          <textarea id="exercises" placeholder="e.g. Squats 3×10, Bench press 3×8, Deadlift 3×5" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="schedule">Schedule</label>
+          <input id="schedule" type="text" placeholder="Mon / Wed / Fri" required />
+        </div>
+        <div class="form-group">
+          <label for="difficulty">Difficulty</label>
+          <select id="difficulty" required>
+            <option value="">Select…</option>
+            <option value="BEGINNER">Beginner</option>
+            <option value="INTERMEDIATE">Intermediate</option>
+            <option value="ADVANCED">Advanced</option>
+          </select>
+        </div>
+      </div>
+      <br />
+      <button type="submit" class="btn btn-primary">Create Plan</button>
+    </form>
+  </div>
+
+  <!-- View plan -->
+  <div class="card">
+    <h2>View Member's Workout Plan</h2>
+    <div class="row">
+      <div class="form-group" style="flex:1;min-width:140px;">
+        <label for="lookupId">Member ID</label>
+        <input id="lookupId" type="number" placeholder="1" />
+      </div>
+      <button id="lookupBtn" class="btn btn-secondary">Look Up</button>
+    </div>
+    <br />
+    <div id="planCard" style="display:none;">
+      <table>
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody id="planBody"></tbody>
+      </table>
+    </div>
+    <p id="planEmpty" class="empty" style="display:none;">No workout plan found for this member.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="auth.js"></script>
+<script src="api.js"></script>
+<script>
+  const session = requireRole(['ADMIN', 'RECEPTIONIST', 'TRAINER', 'MEMBER']);
+  if (!session) throw new Error('redirect');
+
+  const canCreateWorkout = hasAnyRole(['ADMIN', 'TRAINER']);
+  document.getElementById('createWorkoutCard').style.display = canCreateWorkout ? '' : 'none';
+
+  if (session.role === 'TRAINER') {
+    document.getElementById('trainerId').value = session.id;
+    document.getElementById('trainerId').readOnly = true;
+  }
+
+  const difficultyBadge = { BEGINNER: 'badge-green', INTERMEDIATE: 'badge-yellow', ADVANCED: 'badge-red' };
+
+  document.getElementById('workoutForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      const data = await createWorkout({
+        trainerId:       +document.getElementById('trainerId').value,
+        memberId:        +document.getElementById('memberId').value,
+        exercises:        document.getElementById('exercises').value,
+        schedule:         document.getElementById('schedule').value,
+        difficultyLevel:  document.getElementById('difficulty').value,
+      });
+      toast(`Workout plan created (ID: ${data.id})`);
+      e.target.reset();
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  document.getElementById('lookupBtn').addEventListener('click', async () => {
+    const id = document.getElementById('lookupId').value;
+    if (!id) return toast('Enter a member ID', 'err');
+    try {
+      const d = await getWorkout(id);
+      const planCard  = document.getElementById('planCard');
+      const planEmpty = document.getElementById('planEmpty');
+      if (!d) { planCard.style.display = 'none'; planEmpty.style.display = ''; return; }
+      document.getElementById('planBody').innerHTML = Object.entries(d).map(([k, v]) => {
+        const display = k === 'difficultyLevel'
+          ? `<span class="badge ${difficultyBadge[v] || 'badge-blue'}">${v}</span>`
+          : (v ?? '—');
+        return `<tr><td><strong>${k}</strong></td><td>${display}</td></tr>`;
+      }).join('');
+      planCard.style.display = '';
+      planEmpty.style.display = 'none';
+    } catch (err) {
+      document.getElementById('planCard').style.display = 'none';
+      document.getElementById('planEmpty').style.display = '';
+      toast(err.message, 'err');
+    }
+  });
+
+  if (session.role === 'MEMBER') {
+    document.getElementById('lookupId').value = session.id;
+    document.getElementById('lookupId').readOnly = true;
+    document.getElementById('lookupBtn').click();
+  }
+</script>
+</body>
+</html>
