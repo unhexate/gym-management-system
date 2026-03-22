@@ -52,6 +52,8 @@ function getWorkout(memberId)           { return get(`/api/workouts/member/${mem
 
 // ── Attendance ─────────────────────────────────────────
 function markAttendance(data)           { return post('/api/attendance', data); }
+function getAttendance(memberId)        { return get(`/api/attendance/member/${memberId}`); }
+function getMyAttendance()              { return get('/api/attendance/me'); }
 
 // ── Reports ────────────────────────────────────────────
 function getReports()                   { return get('/api/reports'); }

@@ -358,12 +358,28 @@ class GymApiIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+            @Test
+            @Order(17)
+            @DisplayName("GET /api/attendance/member/{id} – returns attendance history list")
+            void getAttendanceHistory() throws Exception {
+            Long memberId = createMember("Ken", "ken2@gym.com");
+
+            mockMvc.perform(post("/api/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body(Map.of("memberId", memberId, "checkinTime", "09:30"))))
+                .andExpect(status().isCreated());
+
+            mockMvc.perform(get("/api/attendance/member/" + memberId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))));
+            }
+
     // ------------------------------------------------------------------
     // 10. Reports endpoint (Facade)
     // ------------------------------------------------------------------
 
     @Test
-        @Order(17)
+        @Order(18)
     @DisplayName("GET /api/reports – returns summary report (Facade Pattern)")
     void getReport() throws Exception {
         mockMvc.perform(get("/api/reports"))

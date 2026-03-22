@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance – GymMS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav></nav>
+
+<div class="page">
+  <h1>Attendance</h1>
+
+  <div class="card">
+    <h2>Mark Check-In</h2>
+    <form id="attendanceForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="memberId">Member ID</label>
+          <input id="memberId" type="number" placeholder="1" required />
+        </div>
+        <div class="form-group">
+          <label for="checkinTime">Check-In Time</label>
+          <input id="checkinTime" type="time" required />
+        </div>
+      </div>
+      <br />
+      <button type="submit" class="btn btn-success">Mark Attendance</button>
+    </form>
+  </div>
+
+  <!-- Attendance history -->
+  <div class="card">
+    <h2>Attendance History</h2>
+    <div class="row" style="margin-bottom:1rem;">
+      <div class="form-group" style="flex:1;min-width:140px;">
+        <label for="historyMemberId">Member ID</label>
+        <input id="historyMemberId" type="number" placeholder="1" />
+      </div>
+      <button id="historyBtn" class="btn btn-secondary">Load History</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Member ID</th><th>Date</th><th>Check-In Time</th></tr>
+        </thead>
+        <tbody id="logBody">
+          <tr><td colspan="4" class="empty" style="text-align:center;">No history loaded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="auth.js"></script>
+<script src="api.js"></script>
+<script>
+  const session = requireRole(['ADMIN', 'RECEPTIONIST']);
+  if (!session) throw new Error('redirect');
+
+  // Pre-fill datetime to now
+  (function () {
+    const el = document.getElementById('checkinTime');
+    const now = new Date();
+    el.value = now.toTimeString().slice(0, 5);
+  })();
+
+  document.getElementById('attendanceForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const memberId   = +document.getElementById('memberId').value;
+    const checkinTime = document.getElementById('checkinTime').value;
+    try {
+      const data = await markAttendance({ memberId, checkinTime });
+      toast(`Attendance marked for member ${memberId}`);
+      document.getElementById('memberId').value = '';
+      document.getElementById('historyMemberId').value = memberId;
+      loadHistory(memberId);
+    } catch (err) { toast(err.message, 'err'); }
+  });
+
+  document.getElementById('historyBtn').addEventListener('click', () => {
+    const memberId = +document.getElementById('historyMemberId').value;
+    if (!memberId) return toast('Enter a member ID', 'err');
+    loadHistory(memberId);
+  });
+
+  async function loadHistory(memberId) {
+    const tbody = document.getElementById('logBody');
+    try {
+      const rows = await getAttendance(memberId);
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty" style="text-align:center;">No attendance history found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.member?.id ?? '—'}</td>
+          <td>${r.date ?? '—'}</td>
+          <td>${r.checkinTime ?? '—'}</td>
+        </tr>`).join('');
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty" style="text-align:center;">Unable to load history.</td></tr>';
+      toast(err.message, 'err');
+    }
+  }
+</script>
+</body>
+</html>

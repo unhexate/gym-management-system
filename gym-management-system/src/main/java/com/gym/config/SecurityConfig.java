@@ -70,6 +70,8 @@ public class SecurityConfig {
 
                 // ── Attendance
                 .requestMatchers(HttpMethod.POST, "/api/attendance").hasAnyRole("ADMIN", "RECEPTIONIST")
+                .requestMatchers(HttpMethod.GET,  "/api/attendance/me").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.GET,  "/api/attendance/member/**").hasAnyRole("ADMIN", "RECEPTIONIST", "TRAINER")
 
                 // ── Reports – Admin only
                 .requestMatchers(HttpMethod.GET, "/api/reports").hasRole("ADMIN")
