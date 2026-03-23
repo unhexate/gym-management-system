@@ -79,6 +79,7 @@ public class PaymentService extends BaseCrudService<Payment, Long> {
     public Payment process(Long memberId, Membership membership, Double amount, String paymentMode) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member", memberId));
+        validateMembershipOwnership(memberId, membership);
 
         Payment payment = new Payment();
         payment.setMember(member);
@@ -91,11 +92,52 @@ public class PaymentService extends BaseCrudService<Payment, Long> {
         return create(payment); // delegate to Template Method
     }
 
+    @Transactional
+    public Payment submitPaymentRequest(Long memberId, Membership membership, Double amount, String paymentMode) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member", memberId));
+        validateMembershipOwnership(memberId, membership);
+
+        Payment payment = new Payment();
+        payment.setMember(member);
+        payment.setMembership(membership);
+        payment.setAmount(amount);
+        payment.setPaymentMode(paymentMode.toUpperCase());
+        payment.setDate(LocalDate.now());
+        payment.setPaymentStatus("PENDING");
+
+        return create(payment);
+    }
+
+    @Transactional
+    public Payment updateStatus(Long paymentId, String status) {
+        String normalizedStatus = status.toUpperCase();
+        if (!"SUCCESS".equals(normalizedStatus)
+                && !"FAILED".equals(normalizedStatus)
+                && !"PENDING".equals(normalizedStatus)) {
+            throw new IllegalArgumentException("Invalid payment status: " + status);
+        }
+
+        Payment payment = findById(paymentId);
+        payment.setPaymentStatus(normalizedStatus);
+        return save(payment);
+    }
+
     public List<Payment> getPaymentHistory(Long memberId) {
         return paymentRepository.findByMemberIdOrderByDateDesc(memberId);
     }
 
+    public List<Payment> getPendingRequests() {
+        return paymentRepository.findByPaymentStatusOrderByDateDesc("PENDING");
+    }
+
     public Double getTotalRevenue() {
         return paymentRepository.sumSuccessfulPayments();
+    }
+
+    private void validateMembershipOwnership(Long memberId, Membership membership) {
+        if (membership.getMember() == null || !memberId.equals(membership.getMember().getId())) {
+            throw new IllegalArgumentException("Membership does not belong to the specified member");
+        }
     }
 }

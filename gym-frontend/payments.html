@@ -15,10 +15,10 @@
 
   <!-- Process payment -->
   <div class="card" id="paymentCard">
-    <h2>Process a Payment</h2>
+    <h2 id="paymentTitle">Process a Payment</h2>
     <form id="paymentForm">
       <div class="form-grid">
-        <div class="form-group">
+        <div class="form-group" id="memberIdGroup">
           <label for="memberId">Member ID</label>
           <input id="memberId" type="number" placeholder="1" required />
         </div>
@@ -41,8 +41,23 @@
         </div>
       </div>
       <br />
-      <button type="submit" class="btn btn-success">Process Payment</button>
+      <button id="paymentSubmitBtn" type="submit" class="btn btn-success">Process Payment</button>
     </form>
+  </div>
+
+  <div class="card" id="pendingCard" style="display:none;">
+    <h2>Pending Payment Requests</h2>
+    <button id="loadPendingBtn" class="btn btn-secondary">Load Pending Requests</button>
+    <br /><br />
+    <div class="table-wrap" id="pendingWrap" style="display:none;">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Member</th><th>Membership</th><th>Amount</th><th>Mode</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="pendingBody"></tbody>
+      </table>
+    </div>
+    <p id="pendingEmpty" class="empty" style="display:none;">No pending payment requests.</p>
   </div>
 
   <!-- Payment history -->
@@ -76,24 +91,38 @@
   if (!session) throw new Error('redirect');
 
   const canProcessPayment = hasAnyRole(['ADMIN', 'RECEPTIONIST']);
-  document.getElementById('paymentCard').style.display = canProcessPayment ? '' : 'none';
+  const isMember = session.role === 'MEMBER';
+  document.getElementById('paymentCard').style.display = (canProcessPayment || isMember) ? '' : 'none';
+  document.getElementById('pendingCard').style.display = canProcessPayment ? '' : 'none';
+
+  if (isMember) {
+    document.getElementById('paymentTitle').textContent = 'Submit Payment Request';
+    document.getElementById('paymentSubmitBtn').textContent = 'Submit Request';
+    document.getElementById('memberIdGroup').style.display = 'none';
+    document.getElementById('memberId').required = false;
+  }
 
   document.getElementById('paymentForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      const data = await processPayment({
-        memberId:     +document.getElementById('memberId').value,
+      const formData = {
         membershipId: +document.getElementById('membershipId').value,
         amount:       +document.getElementById('amount').value,
         paymentMode:   document.getElementById('paymentMode').value,
-      });
-      toast(`Payment recorded (ID: ${data.id})`);
+      };
+
+      const data = isMember
+        ? await submitPaymentRequest(formData)
+        : await processPayment({ memberId: +document.getElementById('memberId').value, ...formData });
+
+      toast(isMember
+        ? `Payment request submitted (ID: ${data.id})`
+        : `Payment recorded (ID: ${data.id})`);
       e.target.reset();
     } catch (err) { toast(err.message, 'err'); }
   });
 
   document.getElementById('historyBtn').addEventListener('click', async () => {
-    const isMember = session.role === 'MEMBER';
     const id = document.getElementById('historyMemberId').value;
     if (!isMember && !id) return toast('Enter a member ID', 'err');
     try {
@@ -123,6 +152,50 @@
     if (memberIdGroup) memberIdGroup.style.display = 'none';
     document.getElementById('historyBtn').textContent = 'Load My History';
     document.getElementById('historyBtn').click();
+  }
+
+  async function loadPending() {
+    try {
+      const list = await getPendingPayments();
+      const wrap = document.getElementById('pendingWrap');
+      const empty = document.getElementById('pendingEmpty');
+      if (!list || list.length === 0) { wrap.style.display = 'none'; empty.style.display = ''; return; }
+      document.getElementById('pendingBody').innerHTML = list.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.member?.id ?? '—'}</td>
+          <td>${p.membership?.id ?? '—'}</td>
+          <td>₹${p.amount}</td>
+          <td><span class="badge badge-blue">${p.paymentMode}</span></td>
+          <td><span class="badge badge-yellow">${p.paymentStatus}</span></td>
+          <td>
+            <button class="btn btn-success" data-id="${p.id}" data-status="SUCCESS">Approve</button>
+            <button class="btn btn-danger" data-id="${p.id}" data-status="FAILED">Reject</button>
+          </td>
+        </tr>`).join('');
+      wrap.style.display = '';
+      empty.style.display = 'none';
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+  }
+
+  document.getElementById('loadPendingBtn').addEventListener('click', loadPending);
+
+  document.getElementById('pendingBody').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-id]');
+    if (!btn) return;
+    try {
+      await updatePaymentStatus(btn.dataset.id, btn.dataset.status);
+      toast('Payment status updated');
+      await loadPending();
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+  });
+
+  if (canProcessPayment) {
+    loadPending();
   }
 </script>
 </body>

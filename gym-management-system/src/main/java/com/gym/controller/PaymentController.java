@@ -1,6 +1,8 @@
 package com.gym.controller;
 
 import com.gym.dto.ProcessPaymentRequest;
+import com.gym.dto.SubmitPaymentRequest;
+import com.gym.dto.UpdatePaymentStatusRequest;
 import com.gym.exception.ApiResponse;
 import com.gym.exception.BadRequestException;
 import com.gym.model.Membership;
@@ -41,6 +43,40 @@ public class PaymentController {
                 request.getMemberId(), membership, request.getAmount(), request.getPaymentMode());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(payment, "Payment processed successfully"));
+    }
+
+    /** POST /api/payments/request – member submits payment request for review */
+    @PostMapping("/request")
+    public ResponseEntity<ApiResponse<Payment>> submitPaymentRequest(
+            @Valid @RequestBody SubmitPaymentRequest request,
+            Principal principal) {
+        User user = userService.findByEmail(principal.getName());
+        if (!"MEMBER".equalsIgnoreCase(user.getRole())) {
+            throw new BadRequestException("Only members can submit payment requests");
+        }
+
+        Membership membership = membershipService.getById(request.getMembershipId());
+        Payment payment = paymentService.submitPaymentRequest(
+                user.getId(), membership, request.getAmount(), request.getPaymentMode());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(payment, "Payment request submitted successfully"));
+    }
+
+    /** GET /api/payments/pending – staff gets pending payment requests */
+    @GetMapping("/pending")
+    public ResponseEntity<ApiResponse<List<Payment>>> getPendingPaymentRequests() {
+        List<Payment> payments = paymentService.getPendingRequests();
+        return ResponseEntity.ok(ApiResponse.success(payments));
+    }
+
+    /** PUT /api/payments/{paymentId}/status – staff approves/rejects payment request */
+    @PutMapping("/{paymentId}/status")
+    public ResponseEntity<ApiResponse<Payment>> updatePaymentStatus(
+            @PathVariable Long paymentId,
+            @Valid @RequestBody UpdatePaymentStatusRequest request) {
+        Payment payment = paymentService.updateStatus(paymentId, request.getPaymentStatus());
+        return ResponseEntity.ok(ApiResponse.success(payment, "Payment status updated successfully"));
     }
 
     /** GET /api/payments/member/{memberId} – full payment history for a member */

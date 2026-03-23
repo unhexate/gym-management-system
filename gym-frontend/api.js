@@ -43,6 +43,11 @@ function getMyMembership()              { return get('/api/memberships/me'); }
 
 // ── Payments ───────────────────────────────────────────
 function processPayment(data)           { return post('/api/payments', data); }
+function submitPaymentRequest(data)     { return post('/api/payments/request', data); }
+function getPendingPayments()           { return get('/api/payments/pending'); }
+function updatePaymentStatus(paymentId, paymentStatus) {
+  return put(`/api/payments/${paymentId}/status`, { paymentStatus });
+}
 function getPayments(memberId)          { return get(`/api/payments/member/${memberId}`); }
 function getMyPayments()                { return get('/api/payments/me'); }
 

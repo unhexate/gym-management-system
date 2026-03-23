@@ -278,10 +278,66 @@ class GymApiIntegrationTest {
                 .andExpect(jsonPath("$.data.amount").value(100.0));
     }
 
-    @Test
+        @Test
         @Order(13)
-    @DisplayName("GET /api/payments/member/{id} – returns payment history list")
-    void paymentHistory() throws Exception {
+        @DisplayName("POST /api/payments/request – member submits payment request as pending")
+        void memberSubmitsPaymentRequest() throws Exception {
+        Long memberId = createMember("Eve", "eve2@gym.com");
+        Long planId   = seedPlan("BASIC", 1, 50.0);
+
+        String mResp = mockMvc.perform(post("/api/memberships")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(Map.of("memberId", memberId, "planId", planId))))
+            .andReturn().getResponse().getContentAsString();
+        Long membershipId = mapper.readTree(mResp).path("data").path("id").asLong();
+
+        mockMvc.perform(post("/api/payments/request")
+                .with(user("eve2@gym.com").roles("MEMBER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(Map.of(
+                    "membershipId", membershipId,
+                    "amount", 50.0,
+                    "paymentMode", "ONLINE"))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.data.paymentStatus").value("PENDING"));
+        }
+
+        @Test
+        @Order(14)
+        @DisplayName("PUT /api/payments/{id}/status – staff approves pending request")
+        void staffApprovesPendingPaymentRequest() throws Exception {
+        Long memberId = createMember("Finn", "finn2@gym.com");
+        Long planId   = seedPlan("BASIC", 1, 60.0);
+
+        String mResp = mockMvc.perform(post("/api/memberships")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(Map.of("memberId", memberId, "planId", planId))))
+            .andReturn().getResponse().getContentAsString();
+        Long membershipId = mapper.readTree(mResp).path("data").path("id").asLong();
+
+        String pResp = mockMvc.perform(post("/api/payments/request")
+                .with(user("finn2@gym.com").roles("MEMBER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(Map.of(
+                    "membershipId", membershipId,
+                    "amount", 60.0,
+                    "paymentMode", "ONLINE"))))
+            .andExpect(status().isCreated())
+            .andReturn().getResponse().getContentAsString();
+        Long paymentId = mapper.readTree(pResp).path("data").path("id").asLong();
+
+        mockMvc.perform(put("/api/payments/" + paymentId + "/status")
+                .with(user("staff@gym.com").roles("RECEPTIONIST"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(Map.of("paymentStatus", "SUCCESS"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.paymentStatus").value("SUCCESS"));
+        }
+
+        @Test
+        @Order(15)
+        @DisplayName("GET /api/payments/member/{id} – returns payment history list")
+        void paymentHistory() throws Exception {
         Long memberId = createMember("Eve", "eve2@gym.com");
         Long planId   = seedPlan("BASIC", 1, 50.0);
 
@@ -305,7 +361,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(14)
+        @Order(16)
     @DisplayName("POST /api/workouts – trainer creates workout plan returns 201")
     void createWorkout() throws Exception {
         Long memberId  = createMember("Frank",  "frank2@gym.com");
@@ -325,7 +381,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(15)
+    @Order(17)
     @DisplayName("POST /api/workouts – trainer cannot create plan for another trainer id")
     void trainerCannotCreateForAnotherTrainerId() throws Exception {
         Long memberId  = createMember("Liam", "liam2@gym.com");
@@ -344,7 +400,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(16)
+    @Order(18)
     @DisplayName("GET /api/workouts/member/{id} – returns member workout plan")
     void getWorkout() throws Exception {
         Long memberId  = createMember("Hank",  "hank2@gym.com");
@@ -364,7 +420,7 @@ class GymApiIntegrationTest {
     }
 
         @Test
-        @Order(17)
+        @Order(19)
         @DisplayName("GET /api/workouts/member/{id} – trainer cannot view unassigned member plan")
         void trainerCannotViewUnassignedMemberPlan() throws Exception {
         Long memberId   = createMember("Nia", "nia2@gym.com");
@@ -388,7 +444,7 @@ class GymApiIntegrationTest {
         }
 
         @Test
-        @Order(18)
+        @Order(20)
         @DisplayName("GET /api/workouts/me – member gets own workout plan")
         void memberGetsOwnWorkoutViaMeEndpoint() throws Exception {
         Long memberId  = createMember("Quin", "quin2@gym.com");
@@ -416,7 +472,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(19)
+        @Order(21)
     @DisplayName("POST /api/attendance – marks attendance returns 201")
     void markAttendance() throws Exception {
         Long memberId = createMember("Jack", "jack2@gym.com");
@@ -429,7 +485,7 @@ class GymApiIntegrationTest {
     }
 
             @Test
-            @Order(20)
+            @Order(22)
             @DisplayName("GET /api/attendance/member/{id} – returns attendance history list")
             void getAttendanceHistory() throws Exception {
             Long memberId = createMember("Ken", "ken2@gym.com");
@@ -449,7 +505,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(21)
+        @Order(23)
     @DisplayName("GET /api/reports – returns summary report (Facade Pattern)")
     void getReport() throws Exception {
         mockMvc.perform(get("/api/reports"))

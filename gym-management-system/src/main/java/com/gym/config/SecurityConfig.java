@@ -61,6 +61,9 @@ public class SecurityConfig {
 
                 // ── Payments
                 .requestMatchers(HttpMethod.POST, "/api/payments").hasAnyRole("ADMIN", "RECEPTIONIST")
+                .requestMatchers(HttpMethod.POST, "/api/payments/request").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.PUT,  "/api/payments/*/status").hasAnyRole("ADMIN", "RECEPTIONIST")
+                .requestMatchers(HttpMethod.GET,  "/api/payments/pending").hasAnyRole("ADMIN", "RECEPTIONIST")
                 .requestMatchers(HttpMethod.GET,  "/api/payments/me").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET,  "/api/payments/member/**").hasAnyRole("ADMIN", "RECEPTIONIST")
 

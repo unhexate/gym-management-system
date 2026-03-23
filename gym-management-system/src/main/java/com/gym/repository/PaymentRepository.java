@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByMemberIdOrderByDateDesc(Long memberId);
+    List<Payment> findByPaymentStatusOrderByDateDesc(String paymentStatus);
 
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.paymentStatus = 'SUCCESS'")
     Double sumSuccessfulPayments();
