@@ -74,7 +74,7 @@
 <script src="auth.js"></script>
 <script src="api.js"></script>
 <script>
-  const session = requireRole(['ADMIN', 'RECEPTIONIST', 'TRAINER', 'MEMBER']);
+  const session = requireRole(['ADMIN', 'TRAINER', 'MEMBER']);
   if (!session) throw new Error('redirect');
 
   const canCreateWorkout = hasAnyRole(['ADMIN', 'TRAINER']);
@@ -103,10 +103,11 @@
   });
 
   document.getElementById('lookupBtn').addEventListener('click', async () => {
+    const isMember = session.role === 'MEMBER';
     const id = document.getElementById('lookupId').value;
-    if (!id) return toast('Enter a member ID', 'err');
+    if (!isMember && !id) return toast('Enter a member ID', 'err');
     try {
-      const d = await getWorkout(id);
+      const d = isMember ? await getMyWorkout() : await getWorkout(id);
       const planCard  = document.getElementById('planCard');
       const planEmpty = document.getElementById('planEmpty');
       if (!d) { planCard.style.display = 'none'; planEmpty.style.display = ''; return; }
@@ -126,8 +127,9 @@
   });
 
   if (session.role === 'MEMBER') {
-    document.getElementById('lookupId').value = session.id;
-    document.getElementById('lookupId').readOnly = true;
+    const lookupGroup = document.getElementById('lookupId').closest('.form-group');
+    if (lookupGroup) lookupGroup.style.display = 'none';
+    document.getElementById('lookupBtn').textContent = 'Load My Plan';
     document.getElementById('lookupBtn').click();
   }
 </script>

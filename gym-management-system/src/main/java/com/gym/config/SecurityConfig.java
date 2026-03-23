@@ -66,7 +66,8 @@ public class SecurityConfig {
 
                 // ── Workouts
                 .requestMatchers(HttpMethod.POST, "/api/workouts").hasAnyRole("ADMIN", "TRAINER")
-                .requestMatchers(HttpMethod.GET,  "/api/workouts/**").authenticated()
+                .requestMatchers(HttpMethod.GET,  "/api/workouts/me").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.GET,  "/api/workouts/member/**").hasAnyRole("ADMIN", "TRAINER")
 
                 // ── Attendance
                 .requestMatchers(HttpMethod.POST, "/api/attendance").hasAnyRole("ADMIN", "RECEPTIONIST")

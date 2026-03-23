@@ -312,6 +312,7 @@ class GymApiIntegrationTest {
         Long trainerId = createTrainer("Grace", "grace2@gym.com");
 
         mockMvc.perform(post("/api/workouts")
+                .with(user("grace2@gym.com").roles("TRAINER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(Map.of(
                                 "trainerId", trainerId,
@@ -324,29 +325,98 @@ class GymApiIntegrationTest {
     }
 
     @Test
-        @Order(15)
+    @Order(15)
+    @DisplayName("POST /api/workouts – trainer cannot create plan for another trainer id")
+    void trainerCannotCreateForAnotherTrainerId() throws Exception {
+        Long memberId  = createMember("Liam", "liam2@gym.com");
+        Long trainerId = createTrainer("Mona", "mona2@gym.com");
+
+        mockMvc.perform(post("/api/workouts")
+                        .with(user("mona2@gym.com").roles("TRAINER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(Map.of(
+                                "trainerId", trainerId + 999,
+                                "memberId", memberId,
+                                "exercises", "Squat",
+                                "schedule", "Mon",
+                                "difficultyLevel", "BEGINNER"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Order(16)
     @DisplayName("GET /api/workouts/member/{id} – returns member workout plan")
     void getWorkout() throws Exception {
         Long memberId  = createMember("Hank",  "hank2@gym.com");
         Long trainerId = createTrainer("Iris",  "iris2@gym.com");
 
         mockMvc.perform(post("/api/workouts")
+                .with(user("iris2@gym.com").roles("TRAINER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(Map.of("trainerId",trainerId,"memberId",memberId,
                                 "exercises","Push-up","schedule","Tue/Thu","difficultyLevel","BEGINNER"))))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/workouts/member/" + memberId))
+        mockMvc.perform(get("/api/workouts/member/" + memberId)
+                .with(user("iris2@gym.com").roles("TRAINER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.exercises").value("Push-up"));
     }
+
+        @Test
+        @Order(17)
+        @DisplayName("GET /api/workouts/member/{id} – trainer cannot view unassigned member plan")
+        void trainerCannotViewUnassignedMemberPlan() throws Exception {
+        Long memberId   = createMember("Nia", "nia2@gym.com");
+        Long trainerOne = createTrainer("Omar", "omar2@gym.com");
+        Long trainerTwo = createTrainer("Pia", "pia2@gym.com");
+
+        mockMvc.perform(post("/api/workouts")
+            .with(user("omar2@gym.com").roles("TRAINER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(Map.of(
+                    "trainerId", trainerOne,
+                    "memberId", memberId,
+                    "exercises", "Pull-up",
+                    "schedule", "Tue",
+                    "difficultyLevel", "INTERMEDIATE"))))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/workouts/member/" + memberId)
+                .with(user("pia2@gym.com").roles("TRAINER")))
+            .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @Order(18)
+        @DisplayName("GET /api/workouts/me – member gets own workout plan")
+        void memberGetsOwnWorkoutViaMeEndpoint() throws Exception {
+        Long memberId  = createMember("Quin", "quin2@gym.com");
+        Long trainerId = createTrainer("Rex", "rex2@gym.com");
+
+        mockMvc.perform(post("/api/workouts")
+            .with(user("rex2@gym.com").roles("TRAINER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(Map.of(
+                    "trainerId", trainerId,
+                    "memberId", memberId,
+                    "exercises", "Row",
+                    "schedule", "Fri",
+                    "difficultyLevel", "BEGINNER"))))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/workouts/me")
+                .with(user("quin2@gym.com").roles("MEMBER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.member.id").value(memberId));
+        }
 
     // ------------------------------------------------------------------
     // 9. Attendance endpoint
     // ------------------------------------------------------------------
 
     @Test
-        @Order(16)
+        @Order(19)
     @DisplayName("POST /api/attendance – marks attendance returns 201")
     void markAttendance() throws Exception {
         Long memberId = createMember("Jack", "jack2@gym.com");
@@ -359,7 +429,7 @@ class GymApiIntegrationTest {
     }
 
             @Test
-            @Order(17)
+            @Order(20)
             @DisplayName("GET /api/attendance/member/{id} – returns attendance history list")
             void getAttendanceHistory() throws Exception {
             Long memberId = createMember("Ken", "ken2@gym.com");
@@ -379,7 +449,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(18)
+        @Order(21)
     @DisplayName("GET /api/reports – returns summary report (Facade Pattern)")
     void getReport() throws Exception {
         mockMvc.perform(get("/api/reports"))

@@ -9,6 +9,7 @@ import com.gym.repository.MemberRepository;
 import com.gym.repository.TrainerRepository;
 import com.gym.repository.WorkoutPlanRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,5 +84,13 @@ public class WorkoutService extends BaseCrudService<WorkoutPlan, Long> {
         return workoutPlanRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No workout plan found for member id: " + memberId));
+    }
+
+    public WorkoutPlan getByMemberForTrainer(Long trainerId, Long memberId) {
+        WorkoutPlan plan = getByMember(memberId);
+        if (plan.getTrainer() == null || !trainerId.equals(plan.getTrainer().getId())) {
+            throw new AccessDeniedException("Trainer can only access workout plans for their own members");
+        }
+        return plan;
     }
 }
