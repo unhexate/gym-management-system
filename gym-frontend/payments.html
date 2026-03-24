@@ -92,32 +92,19 @@
 
   const canProcessPayment = hasAnyRole(['ADMIN', 'RECEPTIONIST']);
   const isMember = session.role === 'MEMBER';
-  document.getElementById('paymentCard').style.display = (canProcessPayment || isMember) ? '' : 'none';
+  document.getElementById('paymentCard').style.display = canProcessPayment ? '' : 'none';
   document.getElementById('pendingCard').style.display = canProcessPayment ? '' : 'none';
-
-  if (isMember) {
-    document.getElementById('paymentTitle').textContent = 'Submit Payment Request';
-    document.getElementById('paymentSubmitBtn').textContent = 'Submit Request';
-    document.getElementById('memberIdGroup').style.display = 'none';
-    document.getElementById('memberId').required = false;
-  }
 
   document.getElementById('paymentForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      const formData = {
+      const data = await processPayment({
+        memberId:     +document.getElementById('memberId').value,
         membershipId: +document.getElementById('membershipId').value,
         amount:       +document.getElementById('amount').value,
         paymentMode:   document.getElementById('paymentMode').value,
-      };
-
-      const data = isMember
-        ? await submitPaymentRequest(formData)
-        : await processPayment({ memberId: +document.getElementById('memberId').value, ...formData });
-
-      toast(isMember
-        ? `Payment request submitted (ID: ${data.id})`
-        : `Payment recorded (ID: ${data.id})`);
+      });
+      toast(`Payment recorded (ID: ${data.id})`);
       e.target.reset();
     } catch (err) { toast(err.message, 'err'); }
   });
@@ -135,8 +122,8 @@
           <td>${p.id}</td>
           <td>₹${p.amount}</td>
           <td><span class="badge badge-blue">${p.paymentMode}</span></td>
-          <td>${p.paymentDate ?? '—'}</td>
-          <td>${p.membershipId}</td>
+          <td>${p.date ?? '—'}</td>
+          <td>${p.membership?.id ?? '—'}</td>
         </tr>`).join('');
       wrap.style.display = '';
       empty.style.display = 'none';
