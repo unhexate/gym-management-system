@@ -26,6 +26,14 @@
           <label for="planId">Plan ID</label>
           <input id="planId" type="number" placeholder="1" required />
         </div>
+        <div class="form-group" id="paymentModeGroup" style="display:none;">
+          <label for="membershipPaymentMode">Payment Mode</label>
+          <select id="membershipPaymentMode">
+            <option value="ONLINE">Online</option>
+            <option value="CARD">Card</option>
+            <option value="CASH">Cash</option>
+          </select>
+        </div>
       </div>
       <br />
       <button id="enrollBtn" type="submit" class="btn btn-primary">Enroll</button>
@@ -69,6 +77,8 @@
     document.getElementById('enrollBtn').textContent = 'Buy Membership';
     const memberIdGroup = document.getElementById('memberIdGroup');
     if (memberIdGroup) memberIdGroup.style.display = 'none';
+    const paymentModeGroup = document.getElementById('paymentModeGroup');
+    if (paymentModeGroup) paymentModeGroup.style.display = '';
     document.getElementById('memberId').required = false;
   }
 
@@ -77,13 +87,16 @@
     try {
       const planId = +document.getElementById('planId').value;
       const data = isMember
-        ? await enrollMyMembership({ planId })
+        ? await purchaseMyMembership({
+            planId,
+            paymentMode: document.getElementById('membershipPaymentMode').value,
+          })
         : await enrollMembership({
             memberId: +document.getElementById('memberId').value,
             planId,
           });
       toast(isMember
-        ? `Membership purchased! ID: ${data.id}`
+        ? `Membership bought (ID: ${data.membership.id}), payment request created (ID: ${data.payment.id})`
         : `Enrolled! Membership ID: ${data.id}`);
       e.target.reset();
     } catch (err) { toast(err.message, 'err'); }

@@ -97,6 +97,9 @@ public class PaymentService extends BaseCrudService<Payment, Long> {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member", memberId));
         validateMembershipOwnership(memberId, membership);
+        if (membership.getPrice() == null || Math.abs(amount - membership.getPrice()) > 0.01) {
+            throw new IllegalArgumentException("Payment amount must match membership price");
+        }
 
         Payment payment = new Payment();
         payment.setMember(member);

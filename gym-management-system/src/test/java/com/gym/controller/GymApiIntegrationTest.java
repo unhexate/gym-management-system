@@ -251,18 +251,20 @@ class GymApiIntegrationTest {
 
     @Test
     @Order(12)
-    @DisplayName("POST /api/memberships/me – member self-enrolls in plan")
-    void memberSelfEnrollsMembership() throws Exception {
+    @DisplayName("POST /api/memberships/me/purchase – member buys membership and creates payment request")
+    void memberPurchasesMembershipWithPaymentRequest() throws Exception {
         Long memberId = createMember("Paul", "paul@gym.com");
         Long planId   = seedPlan("BASIC", 1, 120.0);
 
-        mockMvc.perform(post("/api/memberships/me")
+        mockMvc.perform(post("/api/memberships/me/purchase")
                         .with(user("paul@gym.com").roles("MEMBER"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(Map.of("planId", planId))))
+                        .content(body(Map.of("planId", planId, "paymentMode", "ONLINE"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.member.id").value(memberId))
-                .andExpect(jsonPath("$.data.plan.id").value(planId));
+                .andExpect(jsonPath("$.data.membership.member.id").value(memberId))
+                .andExpect(jsonPath("$.data.membership.plan.id").value(planId))
+                .andExpect(jsonPath("$.data.payment.paymentStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data.payment.amount").value(120.0));
     }
 
     // ------------------------------------------------------------------

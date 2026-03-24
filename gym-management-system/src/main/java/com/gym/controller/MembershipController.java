@@ -1,12 +1,16 @@
 package com.gym.controller;
 
 import com.gym.dto.EnrollMembershipRequest;
+import com.gym.dto.MembershipPurchaseResponse;
+import com.gym.dto.PurchaseMembershipRequest;
 import com.gym.dto.SelfEnrollMembershipRequest;
 import com.gym.exception.ApiResponse;
 import com.gym.exception.BadRequestException;
 import com.gym.model.Membership;
+import com.gym.model.Payment;
 import com.gym.model.User;
 import com.gym.service.MembershipService;
+import com.gym.service.PaymentService;
 import com.gym.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +31,7 @@ import java.security.Principal;
 public class MembershipController {
 
     private final MembershipService membershipService;
+    private final PaymentService paymentService;
     private final UserService userService;
 
     /** POST /api/memberships – enroll a member in a plan (Strategy + Template Method) */
@@ -51,6 +56,25 @@ public class MembershipController {
         Membership membership = membershipService.enroll(user.getId(), request.getPlanId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(membership, "Membership purchased successfully"));
+    }
+
+    /** POST /api/memberships/me/purchase – member buys plan and creates payment request */
+    @PostMapping("/me/purchase")
+    public ResponseEntity<ApiResponse<MembershipPurchaseResponse>> purchaseMembership(
+            @Valid @RequestBody PurchaseMembershipRequest request,
+            Principal principal) {
+        User user = userService.findByEmail(principal.getName());
+        if (!"MEMBER".equalsIgnoreCase(user.getRole())) {
+            throw new BadRequestException("Only members can purchase memberships");
+        }
+
+        Membership membership = membershipService.enroll(user.getId(), request.getPlanId());
+        Payment payment = paymentService.submitPaymentRequest(
+                user.getId(), membership, membership.getPrice(), request.getPaymentMode());
+
+        MembershipPurchaseResponse response = new MembershipPurchaseResponse(membership, payment);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Membership purchase initiated successfully"));
     }
 
     /** GET /api/memberships/member/{memberId} – get active membership for member */
