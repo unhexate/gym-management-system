@@ -15,10 +15,10 @@
 
   <!-- Enroll -->
   <div class="card" id="enrollCard">
-    <h2>Enroll in a Plan</h2>
+    <h2 id="enrollTitle">Enroll in a Plan</h2>
     <form id="enrollForm">
       <div class="form-grid">
-        <div class="form-group">
+        <div class="form-group" id="memberIdGroup">
           <label for="memberId">Member ID</label>
           <input id="memberId" type="number" placeholder="1" required />
         </div>
@@ -28,7 +28,7 @@
         </div>
       </div>
       <br />
-      <button type="submit" class="btn btn-primary">Enroll</button>
+      <button id="enrollBtn" type="submit" class="btn btn-primary">Enroll</button>
     </form>
   </div>
 
@@ -49,7 +49,7 @@
         <tbody id="membershipBody"></tbody>
       </table>
     </div>
-    <p id="membershipEmpty" class="empty" style="display:none;">No active membership found for this member. If you just created this account, ask reception/admin to enroll a plan first.</p>
+    <p id="membershipEmpty" class="empty" style="display:none;">No active membership found for this member.</p>
   </div>
 </div>
 
@@ -60,23 +60,36 @@
   const session = requireRole(['ADMIN', 'RECEPTIONIST', 'TRAINER', 'MEMBER']);
   if (!session) throw new Error('redirect');
 
-  const canEnrollMembership = hasAnyRole(['ADMIN', 'RECEPTIONIST']);
+  const canEnrollMembership = hasAnyRole(['ADMIN', 'RECEPTIONIST', 'MEMBER']);
+  const isMember = session.role === 'MEMBER';
   document.getElementById('enrollCard').style.display = canEnrollMembership ? '' : 'none';
+
+  if (isMember) {
+    document.getElementById('enrollTitle').textContent = 'Buy a Membership Plan';
+    document.getElementById('enrollBtn').textContent = 'Buy Membership';
+    const memberIdGroup = document.getElementById('memberIdGroup');
+    if (memberIdGroup) memberIdGroup.style.display = 'none';
+    document.getElementById('memberId').required = false;
+  }
 
   document.getElementById('enrollForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      const data = await enrollMembership({
-        memberId: +document.getElementById('memberId').value,
-        planId:   +document.getElementById('planId').value,
-      });
-      toast(`Enrolled! Membership ID: ${data.id}`);
+      const planId = +document.getElementById('planId').value;
+      const data = isMember
+        ? await enrollMyMembership({ planId })
+        : await enrollMembership({
+            memberId: +document.getElementById('memberId').value,
+            planId,
+          });
+      toast(isMember
+        ? `Membership purchased! ID: ${data.id}`
+        : `Enrolled! Membership ID: ${data.id}`);
       e.target.reset();
     } catch (err) { toast(err.message, 'err'); }
   });
 
   document.getElementById('lookupBtn').addEventListener('click', async () => {
-    const isMember = session.role === 'MEMBER';
     const id = document.getElementById('lookupId').value;
     if (!isMember && !id) return toast('Enter a member ID', 'err');
     try {

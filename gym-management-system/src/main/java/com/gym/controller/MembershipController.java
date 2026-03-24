@@ -1,6 +1,7 @@
 package com.gym.controller;
 
 import com.gym.dto.EnrollMembershipRequest;
+import com.gym.dto.SelfEnrollMembershipRequest;
 import com.gym.exception.ApiResponse;
 import com.gym.exception.BadRequestException;
 import com.gym.model.Membership;
@@ -35,6 +36,21 @@ public class MembershipController {
         Membership membership = membershipService.enroll(request.getMemberId(), request.getPlanId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(membership, "Membership enrolled successfully"));
+    }
+
+    /** POST /api/memberships/me – authenticated member enrolls themselves in a plan */
+    @PostMapping("/me")
+    public ResponseEntity<ApiResponse<Membership>> selfEnroll(
+            @Valid @RequestBody SelfEnrollMembershipRequest request,
+            Principal principal) {
+        User user = userService.findByEmail(principal.getName());
+        if (!"MEMBER".equalsIgnoreCase(user.getRole())) {
+            throw new BadRequestException("Only members can self-enroll memberships");
+        }
+
+        Membership membership = membershipService.enroll(user.getId(), request.getPlanId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(membership, "Membership purchased successfully"));
     }
 
     /** GET /api/memberships/member/{memberId} – get active membership for member */
