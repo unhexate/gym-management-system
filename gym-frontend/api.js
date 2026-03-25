@@ -35,6 +35,14 @@ const put  = (path, body) => api('PUT',  path, body);
 // ── Users ──────────────────────────────────────────────
 function registerUser(data)             { return post('/api/users', data); }
 function updateProfile(userId, data)    { return put(`/api/users/${userId}/profile`, data); }
+function searchUsers(params = {}) {
+  const qp = new URLSearchParams();
+  if (params.role) qp.set('role', params.role);
+  if (params.q) qp.set('q', params.q);
+  if (params.limit) qp.set('limit', String(params.limit));
+  const suffix = qp.toString() ? `?${qp.toString()}` : '';
+  return get(`/api/users/search${suffix}`);
+}
 
 // ── Memberships ────────────────────────────────────────
 function enrollMembership(data)         { return post('/api/memberships', data); }
@@ -42,6 +50,7 @@ function enrollMyMembership(data)       { return post('/api/memberships/me', dat
 function purchaseMyMembership(data)     { return post('/api/memberships/me/purchase', data); }
 function getMembership(memberId)        { return get(`/api/memberships/member/${memberId}`); }
 function getMyMembership()              { return get('/api/memberships/me'); }
+function getMembershipPlans()           { return get('/api/memberships/plans'); }
 
 // ── Payments ───────────────────────────────────────────
 function processPayment(data)           { return post('/api/payments', data); }

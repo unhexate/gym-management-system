@@ -7,6 +7,7 @@ import com.gym.dto.SelfEnrollMembershipRequest;
 import com.gym.exception.ApiResponse;
 import com.gym.exception.BadRequestException;
 import com.gym.model.Membership;
+import com.gym.model.MembershipPlan;
 import com.gym.model.Payment;
 import com.gym.model.User;
 import com.gym.service.MembershipService;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 /**
  * REST controller for membership enrollment and status.
@@ -95,5 +97,11 @@ public class MembershipController {
 
         Membership membership = membershipService.getActiveMembership(user.getId());
         return ResponseEntity.ok(ApiResponse.success(membership));
+    }
+
+    /** GET /api/memberships/plans – list available plans for selector UIs */
+    @GetMapping("/plans")
+    public ResponseEntity<ApiResponse<List<MembershipPlan>>> getPlans() {
+        return ResponseEntity.ok(ApiResponse.success(membershipService.getAllPlans()));
     }
 }

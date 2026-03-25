@@ -2,6 +2,7 @@ package com.gym.controller;
 
 import com.gym.dto.CreateUserRequest;
 import com.gym.dto.UpdateProfileRequest;
+import com.gym.dto.UserLookupResponse;
 import com.gym.exception.ApiResponse;
 import com.gym.model.User;
 import com.gym.service.UserService;
@@ -15,6 +16,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 /**
  * REST controller for user registration and profile management.
@@ -44,6 +46,16 @@ public class UserController {
     public ResponseEntity<ApiResponse<User>> me(Principal principal) {
         User user = userService.findByEmail(principal.getName());
         return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+    /** GET /api/users/search – lightweight lookup for selector UIs */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<UserLookupResponse>>> searchUsers(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "20") int limit) {
+        List<UserLookupResponse> users = userService.searchUsers(role, q, limit);
+        return ResponseEntity.ok(ApiResponse.success(users));
     }
 
     /** PUT /api/users/{userId}/profile – update profile fields */

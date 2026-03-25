@@ -564,4 +564,37 @@ class GymApiIntegrationTest {
                 .andExpect(jsonPath("$.data.totalRevenue").exists())
                 .andExpect(jsonPath("$.data.activeMembers").exists());
     }
+
+    @Test
+    @Order(26)
+    @DisplayName("GET /api/users/search – staff can search members without sensitive fields")
+    void searchUsersForMemberLookup() throws Exception {
+        createMember("Ava Stone", "ava2@gym.com");
+        createMember("Avery Cole", "avery2@gym.com");
+
+        mockMvc.perform(get("/api/users/search")
+                        .with(user("admin@gym.com").roles("ADMIN"))
+                        .param("role", "MEMBER")
+                        .param("q", "av")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(2))))
+                .andExpect(jsonPath("$.data[0].password").doesNotExist());
+    }
+
+    @Test
+    @Order(27)
+    @DisplayName("GET /api/memberships/plans – authenticated user can load plan options")
+    void getMembershipPlansForSelectors() throws Exception {
+        seedPlan("BASIC", 1, 100.0);
+        seedPlan("PREMIUM", 3, 300.0);
+
+        mockMvc.perform(get("/api/memberships/plans")
+                        .with(user("mia@gym.com").roles("MEMBER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(2))))
+                .andExpect(jsonPath("$.data[0].planName").exists());
+    }
 }

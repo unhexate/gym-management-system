@@ -1,6 +1,7 @@
 package com.gym.service;
 
 import com.gym.dto.CreateUserRequest;
+import com.gym.dto.UserLookupResponse;
 import com.gym.dto.UpdateProfileRequest;
 import com.gym.exception.BadRequestException;
 import com.gym.exception.ResourceNotFoundException;
@@ -8,10 +9,13 @@ import com.gym.model.User;
 
 import com.gym.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -69,11 +73,37 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
 
+    public List<UserLookupResponse> searchUsers(String role, String query, int limit) {
+        int normalizedLimit = Math.max(1, Math.min(limit, 50));
+        String normalizedRole = normalizeOptionalRole(role);
+        String normalizedQuery = (query == null || query.isBlank()) ? null : query.trim();
+        Pageable pageable = PageRequest.of(0, normalizedLimit);
+
+        return userRepository.searchUsers(normalizedRole, normalizedQuery, pageable)
+                .stream()
+                .map(UserLookupResponse::from)
+                .toList();
+    }
+
     private String normalizeRole(String role) {
         if (role == null || role.isBlank()) {
             throw new BadRequestException("role is required");
         }
         return role.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeOptionalRole(String role) {
+        if (role == null || role.isBlank()) {
+            return null;
+        }
+        String normalized = role.trim().toUpperCase(Locale.ROOT);
+        if (!"ADMIN".equals(normalized)
+                && !"RECEPTIONIST".equals(normalized)
+                && !"TRAINER".equals(normalized)
+                && !"MEMBER".equals(normalized)) {
+            throw new BadRequestException("Unsupported role filter: " + role);
+        }
+        return normalized;
     }
 
     private void validateCreatorRolePolicy(String targetRole, String creatorRole) {

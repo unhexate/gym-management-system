@@ -110,6 +110,10 @@ public class MembershipService extends BaseCrudService<Membership, Long> {
         return membershipRepository.findByMemberId(memberId);
     }
 
+    public List<MembershipPlan> getAllPlans() {
+        return membershipPlanRepository.findAll();
+    }
+
     // Expose findById publicly for use by other services
     public Membership getById(Long id) {
         return findById(id);

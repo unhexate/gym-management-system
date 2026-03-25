@@ -19,12 +19,16 @@
     <form id="enrollForm">
       <div class="form-grid">
         <div class="form-group" id="memberIdGroup">
-          <label for="memberId">Member ID</label>
-          <input id="memberId" type="number" placeholder="1" required />
+          <label for="memberSelect">Member</label>
+          <select id="memberSelect" required>
+            <option value="">Select member…</option>
+          </select>
         </div>
         <div class="form-group">
-          <label for="planId">Plan ID</label>
-          <input id="planId" type="number" placeholder="1" required />
+          <label for="planSelect">Plan</label>
+          <select id="planSelect" required>
+            <option value="">Select plan…</option>
+          </select>
         </div>
         <div class="form-group" id="paymentModeGroup" style="display:none;">
           <label for="membershipPaymentMode">Payment Mode</label>
@@ -45,8 +49,10 @@
     <h2>View Active Membership</h2>
     <div class="row">
       <div class="form-group" style="flex:1;min-width:140px;">
-        <label for="lookupId">Member ID</label>
-        <input id="lookupId" type="number" placeholder="1" />
+        <label for="lookupMemberSelect">Member</label>
+        <select id="lookupMemberSelect">
+          <option value="">Select member…</option>
+        </select>
       </div>
       <button id="lookupBtn" class="btn btn-secondary">Look Up</button>
     </div>
@@ -70,6 +76,9 @@
 
   const canEnrollMembership = hasAnyRole(['ADMIN', 'RECEPTIONIST', 'MEMBER']);
   const isMember = session.role === 'MEMBER';
+  const memberSelect = document.getElementById('memberSelect');
+  const lookupMemberSelect = document.getElementById('lookupMemberSelect');
+  const planSelect = document.getElementById('planSelect');
   document.getElementById('enrollCard').style.display = canEnrollMembership ? '' : 'none';
 
   if (isMember) {
@@ -79,20 +88,40 @@
     if (memberIdGroup) memberIdGroup.style.display = 'none';
     const paymentModeGroup = document.getElementById('paymentModeGroup');
     if (paymentModeGroup) paymentModeGroup.style.display = '';
-    document.getElementById('memberId').required = false;
+    memberSelect.required = false;
+  }
+
+  async function loadPlanOptions() {
+    const plans = await getMembershipPlans();
+    const options = ['<option value="">Select plan…</option>'];
+    plans.forEach(plan => {
+      options.push(`<option value="${plan.id}">${plan.planName} - ${plan.durationMonths} mo - INR ${plan.price}</option>`);
+    });
+    planSelect.innerHTML = options.join('');
+  }
+
+  async function loadMemberOptions() {
+    const members = await searchUsers({ role: 'MEMBER', limit: 50 });
+    const options = ['<option value="">Select member…</option>'];
+    members.forEach(member => {
+      options.push(`<option value="${member.id}">${member.name} (${member.email})</option>`);
+    });
+    memberSelect.innerHTML = options.join('');
+    lookupMemberSelect.innerHTML = options.join('');
   }
 
   document.getElementById('enrollForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      const planId = +document.getElementById('planId').value;
+      const planId = +planSelect.value;
+      if (!planId) return toast('Select a plan', 'err');
       const data = isMember
         ? await purchaseMyMembership({
             planId,
             paymentMode: document.getElementById('membershipPaymentMode').value,
           })
         : await enrollMembership({
-            memberId: +document.getElementById('memberId').value,
+            memberId: +memberSelect.value,
             planId,
           });
       toast(isMember
@@ -103,8 +132,8 @@
   });
 
   document.getElementById('lookupBtn').addEventListener('click', async () => {
-    const id = document.getElementById('lookupId').value;
-    if (!isMember && !id) return toast('Enter a member ID', 'err');
+    const id = lookupMemberSelect.value;
+    if (!isMember && !id) return toast('Select a member', 'err');
     try {
       const d = isMember ? await getMyMembership() : await getMembership(id);
       const info = document.getElementById('membershipInfo');
@@ -155,11 +184,22 @@
   }
 
   if (session.role === 'MEMBER') {
-    const lookupGroup = document.getElementById('lookupId').closest('.form-group');
+    const lookupGroup = lookupMemberSelect.closest('.form-group');
     if (lookupGroup) lookupGroup.style.display = 'none';
     document.getElementById('lookupBtn').textContent = 'Load My Membership';
     document.getElementById('lookupBtn').click();
   }
+
+  (async function initSelectors() {
+    try {
+      await loadPlanOptions();
+      if (!isMember) {
+        await loadMemberOptions();
+      }
+    } catch (err) {
+      toast(err.message || 'Unable to load selector data', 'err');
+    }
+  })();
 </script>
 </body>
 </html>
