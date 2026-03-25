@@ -13,6 +13,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * Workout plan service – extends {@link BaseCrudService} (Template Method pattern).
  */
@@ -69,6 +71,19 @@ public class WorkoutService extends BaseCrudService<WorkoutPlan, Long> {
                 .orElseThrow(() -> new ResourceNotFoundException("Trainer", trainerId));
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member", memberId));
+
+        Optional<WorkoutPlan> existingPlanOpt = workoutPlanRepository.findByMemberId(memberId);
+        if (existingPlanOpt.isPresent()) {
+            WorkoutPlan existingPlan = existingPlanOpt.get();
+            if (existingPlan.getTrainer() == null || !trainerId.equals(existingPlan.getTrainer().getId())) {
+                throw new AccessDeniedException("Member is already assigned to another trainer");
+            }
+
+            existingPlan.setExercises(exercises);
+            existingPlan.setSchedule(schedule);
+            existingPlan.setDifficultyLevel(difficultyLevel.toUpperCase());
+            return save(existingPlan);
+        }
 
         WorkoutPlan plan = new WorkoutPlan();
         plan.setTrainer(trainer);

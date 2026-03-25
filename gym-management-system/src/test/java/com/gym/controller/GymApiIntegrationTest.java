@@ -417,8 +417,39 @@ class GymApiIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+                    @Test
+                    @Order(19)
+                    @DisplayName("POST /api/workouts – trainer cannot overwrite member assigned to another trainer")
+                    void trainerCannotOverwriteMemberAssignedToAnotherTrainer() throws Exception {
+                    Long memberId   = createMember("Sara", "sara2@gym.com");
+                    Long trainerOne = createTrainer("Troy", "troy2@gym.com");
+                    Long trainerTwo = createTrainer("Uma", "uma2@gym.com");
+
+                    mockMvc.perform(post("/api/workouts")
+                            .with(user("troy2@gym.com").roles("TRAINER"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body(Map.of(
+                                "trainerId", trainerOne,
+                                "memberId", memberId,
+                                "exercises", "Deadlift",
+                                "schedule", "Mon/Wed",
+                                "difficultyLevel", "INTERMEDIATE"))))
+                        .andExpect(status().isCreated());
+
+                    mockMvc.perform(post("/api/workouts")
+                            .with(user("uma2@gym.com").roles("TRAINER"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body(Map.of(
+                                "trainerId", trainerTwo,
+                                "memberId", memberId,
+                                "exercises", "Burpees",
+                                "schedule", "Fri",
+                                "difficultyLevel", "BEGINNER"))))
+                        .andExpect(status().isForbidden());
+                    }
+
     @Test
-    @Order(19)
+                    @Order(20)
     @DisplayName("GET /api/workouts/member/{id} – returns member workout plan")
     void getWorkout() throws Exception {
         Long memberId  = createMember("Hank",  "hank2@gym.com");
@@ -438,12 +469,12 @@ class GymApiIntegrationTest {
     }
 
         @Test
-        @Order(20)
+    @Order(21)
         @DisplayName("GET /api/workouts/member/{id} – trainer cannot view unassigned member plan")
         void trainerCannotViewUnassignedMemberPlan() throws Exception {
         Long memberId   = createMember("Nia", "nia2@gym.com");
         Long trainerOne = createTrainer("Omar", "omar2@gym.com");
-        Long trainerTwo = createTrainer("Pia", "pia2@gym.com");
+        createTrainer("Pia", "pia2@gym.com");
 
         mockMvc.perform(post("/api/workouts")
             .with(user("omar2@gym.com").roles("TRAINER"))
@@ -462,7 +493,7 @@ class GymApiIntegrationTest {
         }
 
         @Test
-        @Order(21)
+        @Order(22)
         @DisplayName("GET /api/workouts/me – member gets own workout plan")
         void memberGetsOwnWorkoutViaMeEndpoint() throws Exception {
         Long memberId  = createMember("Quin", "quin2@gym.com");
@@ -490,7 +521,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(22)
+        @Order(23)
     @DisplayName("POST /api/attendance – marks attendance returns 201")
     void markAttendance() throws Exception {
         Long memberId = createMember("Jack", "jack2@gym.com");
@@ -503,7 +534,7 @@ class GymApiIntegrationTest {
     }
 
             @Test
-            @Order(23)
+            @Order(24)
             @DisplayName("GET /api/attendance/member/{id} – returns attendance history list")
             void getAttendanceHistory() throws Exception {
             Long memberId = createMember("Ken", "ken2@gym.com");
@@ -523,7 +554,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(24)
+        @Order(25)
     @DisplayName("GET /api/reports – returns summary report (Facade Pattern)")
     void getReport() throws Exception {
         mockMvc.perform(get("/api/reports"))
