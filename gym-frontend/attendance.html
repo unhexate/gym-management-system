@@ -18,8 +18,10 @@
     <form id="attendanceForm">
       <div class="form-grid">
         <div class="form-group">
-          <label for="memberId">Member ID</label>
-          <input id="memberId" type="number" placeholder="1" required />
+          <label for="memberSelect">Member</label>
+          <select id="memberSelect" required>
+            <option value="">Select member…</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="checkinTime">Check-In Time</label>
@@ -36,8 +38,10 @@
     <h2>Attendance History</h2>
     <div class="row" style="margin-bottom:1rem;">
       <div class="form-group" style="flex:1;min-width:140px;">
-        <label for="historyMemberId">Member ID</label>
-        <input id="historyMemberId" type="number" placeholder="1" />
+        <label for="historyMemberSelect">Member</label>
+        <select id="historyMemberSelect">
+          <option value="">Select member…</option>
+        </select>
       </div>
       <button id="historyBtn" class="btn btn-secondary">Load History</button>
     </div>
@@ -58,8 +62,10 @@
 <script src="auth.js"></script>
 <script src="api.js"></script>
 <script>
-  const session = requireRole(['ADMIN', 'RECEPTIONIST']);
+  const session = requireRole(['ADMIN', 'RECEPTIONIST', 'TRAINER']);
   if (!session) throw new Error('redirect');
+  const memberSelect = document.getElementById('memberSelect');
+  const historyMemberSelect = document.getElementById('historyMemberSelect');
 
   // Pre-fill datetime to now
   (function () {
@@ -70,22 +76,33 @@
 
   document.getElementById('attendanceForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const memberId   = +document.getElementById('memberId').value;
+    const memberId   = +memberSelect.value;
+    if (!memberId) return toast('Select a member', 'err');
     const checkinTime = document.getElementById('checkinTime').value;
     try {
       const data = await markAttendance({ memberId, checkinTime });
       toast(`Attendance marked for member ${memberId}`);
-      document.getElementById('memberId').value = '';
-      document.getElementById('historyMemberId').value = memberId;
+      memberSelect.value = '';
+      historyMemberSelect.value = String(memberId);
       loadHistory(memberId);
     } catch (err) { toast(err.message, 'err'); }
   });
 
   document.getElementById('historyBtn').addEventListener('click', () => {
-    const memberId = +document.getElementById('historyMemberId').value;
-    if (!memberId) return toast('Enter a member ID', 'err');
+    const memberId = +historyMemberSelect.value;
+    if (!memberId) return toast('Select a member', 'err');
     loadHistory(memberId);
   });
+
+  async function initMemberSelectors() {
+    const members = await searchUsers({ role: 'MEMBER', limit: 50 });
+    const options = ['<option value="">Select member…</option>'];
+    members.forEach(member => {
+      options.push(`<option value="${member.id}">${member.name} (${member.email})</option>`);
+    });
+    memberSelect.innerHTML = options.join('');
+    historyMemberSelect.innerHTML = options.join('');
+  }
 
   async function loadHistory(memberId) {
     const tbody = document.getElementById('logBody');
@@ -107,6 +124,10 @@
       toast(err.message, 'err');
     }
   }
+
+  initMemberSelectors().catch(err => {
+    toast(err.message || 'Unable to load members', 'err');
+  });
 </script>
 </body>
 </html>
