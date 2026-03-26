@@ -19,12 +19,14 @@
     <form id="paymentForm">
       <div class="form-grid">
         <div class="form-group" id="memberIdGroup">
-          <label for="memberId">Member ID</label>
-          <input id="memberId" type="number" placeholder="1" required />
+          <label for="memberSelect">Member</label>
+          <select id="memberSelect" required>
+            <option value="">Select member…</option>
+          </select>
         </div>
         <div class="form-group">
-          <label for="membershipId">Membership ID</label>
-          <input id="membershipId" type="number" placeholder="1" required />
+          <label for="membershipRef">Active Membership</label>
+          <input id="membershipRef" type="text" placeholder="Select a member first" readonly />
         </div>
         <div class="form-group">
           <label for="amount">Amount (₹)</label>
@@ -65,8 +67,10 @@
     <h2>Payment History</h2>
     <div class="row">
       <div class="form-group" style="flex:1;min-width:140px;">
-        <label for="historyMemberId">Member ID</label>
-        <input id="historyMemberId" type="number" placeholder="1" />
+        <label for="historyMemberSelect">Member</label>
+        <select id="historyMemberSelect">
+          <option value="">Select member…</option>
+        </select>
       </div>
       <button id="historyBtn" class="btn btn-secondary">Load History</button>
     </div>
@@ -92,26 +96,75 @@
 
   const canProcessPayment = hasAnyRole(['ADMIN', 'RECEPTIONIST']);
   const isMember = session.role === 'MEMBER';
+  const memberSelect = document.getElementById('memberSelect');
+  const historyMemberSelect = document.getElementById('historyMemberSelect');
+  const membershipRef = document.getElementById('membershipRef');
+  let resolvedMembershipId = null;
   document.getElementById('paymentCard').style.display = canProcessPayment ? '' : 'none';
   document.getElementById('pendingCard').style.display = canProcessPayment ? '' : 'none';
+
+  async function initMemberSelectors() {
+    const members = await searchUsers({ role: 'MEMBER', limit: 50 });
+    const options = ['<option value="">Select member…</option>'];
+    members.forEach(member => {
+      options.push(`<option value="${member.id}">${member.name} (${member.email})</option>`);
+    });
+    memberSelect.innerHTML = options.join('');
+    historyMemberSelect.innerHTML = options.join('');
+  }
+
+  async function resolveActiveMembership(memberId) {
+    if (!memberId) {
+      resolvedMembershipId = null;
+      membershipRef.value = '';
+      return;
+    }
+
+    try {
+      const membership = await getMembership(memberId);
+      resolvedMembershipId = membership.id;
+      membershipRef.value = `#${membership.id} - ${membership.plan?.planName || 'Plan'}`;
+      if (membership.price != null) {
+        document.getElementById('amount').value = membership.price;
+      }
+    } catch (err) {
+      resolvedMembershipId = null;
+      membershipRef.value = 'No active membership';
+      throw err;
+    }
+  }
+
+  memberSelect.addEventListener('change', async () => {
+    try {
+      await resolveActiveMembership(memberSelect.value);
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+  });
 
   document.getElementById('paymentForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
+      const memberId = +memberSelect.value;
+      if (!memberId) return toast('Select a member', 'err');
+      if (!resolvedMembershipId) return toast('No active membership found for selected member', 'err');
+
       const data = await processPayment({
-        memberId:     +document.getElementById('memberId').value,
-        membershipId: +document.getElementById('membershipId').value,
+        memberId,
+        membershipId: resolvedMembershipId,
         amount:       +document.getElementById('amount').value,
         paymentMode:   document.getElementById('paymentMode').value,
       });
       toast(`Payment recorded (ID: ${data.id})`);
       e.target.reset();
+      resolvedMembershipId = null;
+      membershipRef.value = '';
     } catch (err) { toast(err.message, 'err'); }
   });
 
   document.getElementById('historyBtn').addEventListener('click', async () => {
-    const id = document.getElementById('historyMemberId').value;
-    if (!isMember && !id) return toast('Enter a member ID', 'err');
+    const id = historyMemberSelect.value;
+    if (!isMember && !id) return toast('Select a member', 'err');
     try {
       const list = isMember ? await getMyPayments() : await getPayments(id);
       const wrap  = document.getElementById('historyWrap');
@@ -135,10 +188,14 @@
   });
 
   if (session.role === 'MEMBER') {
-    const memberIdGroup = document.getElementById('historyMemberId').closest('.form-group');
+    const memberIdGroup = historyMemberSelect.closest('.form-group');
     if (memberIdGroup) memberIdGroup.style.display = 'none';
     document.getElementById('historyBtn').textContent = 'Load My History';
     document.getElementById('historyBtn').click();
+  }
+
+  if (canProcessPayment) {
+    initMemberSelectors().catch(err => toast(err.message || 'Unable to load members', 'err'));
   }
 
   async function loadPending() {
