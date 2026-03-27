@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Work has started and multiple high-priority slices are already implemented with incremental conventional commits.
+Work is actively progressing with incremental conventional commits. P2 selector migration is now largely implemented across backend and frontend.
 
 ## Completed (Committed)
 
@@ -31,24 +31,37 @@ Work has started and multiple high-priority slices are already implemented with 
    - Fixed check-in time format mismatch (`time` field now maps to backend expected `HH:mm`).
    - Added integration test for attendance history retrieval.
 
-## Completed But Not Yet Committed (as of this note)
+5. `aab8ae3` — **feat(workouts): enforce trainer ownership on member plans**
+   - Added service-level ownership guard in workout creation/update flow.
+   - Prevented cross-trainer takeover of existing member workout plans.
+   - Added integration coverage for forbidden overwrite scenario.
 
-The following files are present in working tree and need committing:
-- `FRONTEND_LOGICAL_IMPROVEMENTS.md`
-- `GYM_MANAGEMENT_SYSTEM_PLAN.md`
-- `gym-frontend/index.html`
-- `gym-frontend/login.html`
-- `gym-frontend/reports.html`
-- `gym-frontend/style.css`
-- `gym-frontend/workouts.html`
-- `gym-management-system/scripts/seed_users.py`
+6. `cca4e07` — **feat(selectors): add user search and membership plan lookup**
+   - Added `GET /api/users/search` with role/query/limit filters.
+   - Added lightweight lookup DTO for safe selector payloads.
+   - Added `GET /api/memberships/plans` for plan selectors.
+   - Added integration tests for both selector endpoints.
 
-(Will be committed immediately after writing this note.)
+7. `2847f02` — **feat(attendance-ui): replace member IDs with selector**
+   - Replaced typed member IDs with member dropdown selectors.
+   - Reused backend `users/search` endpoint for attendance mark/history flows.
+
+8. `7568750` — **feat(payments-ui): resolve active membership from member selector**
+   - Replaced typed member and membership IDs with selector-driven flow.
+   - Auto-resolves active membership from selected member before processing payment.
+
+9. `562955b` — **feat(workouts-ui): use trainer/member selectors**
+   - Replaced typed trainer/member IDs with selector controls.
+   - Preserved trainer self-binding behavior for trainer role.
+
+10. `ce4bcab` — **feat(users-ui): select user instead of typing ID**
+    - Replaced update-profile user ID input with user selector.
+    - Refreshes selector options after user registration.
 
 ## Remaining Work (Priority)
 
 ### P1 — Security/Ownership Completion
-- Enforce trainer/member ownership constraints for workouts (assigned-member checks).
+- Enforce trainer/member ownership constraints for workouts (assigned-member checks). ✅
 - Add equivalent ownership constraints for membership lookup where policy requires.
 
 ### P1 — Payment Domain Completion
@@ -56,8 +69,8 @@ The following files are present in working tree and need committing:
 - Add payment status lifecycle (`PENDING/APPROVED/REJECTED`) if request model is adopted.
 
 ### P2 — Remove Manual ID Dependence
-- Replace raw ID entry UX with search/select endpoints (`users/search`, active membership resolver, assignment-based lists).
-- Wire frontend forms to selector-based resolution.
+- Replace raw ID entry UX with search/select endpoints (`users/search`, active membership resolver, assignment-based lists). (mostly done; assignment-scoped lists pending)
+- Wire frontend forms to selector-based resolution. (done for users/membership/payments/workouts/attendance)
 
 ### P2 — Error Contract Consistency
 - Standardize backend error envelope fields and status semantics across controllers.
@@ -69,7 +82,7 @@ The following files are present in working tree and need committing:
 
 ## Note To Self (Next Session)
 
-- Start from **Workout ownership enforcement** first (service-level assignment checks + integration tests), then move to **payment member submission flow**.
+- Next focus: **assignment-based member lists** for trainer-scoped selector data (backend + frontend wiring).
 - Keep incremental commit discipline:
   - one feature slice per commit,
   - conventional commit format,
