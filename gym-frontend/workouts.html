@@ -19,12 +19,16 @@
     <form id="workoutForm">
       <div class="form-grid">
         <div class="form-group">
-          <label for="trainerId">Trainer ID</label>
-          <input id="trainerId" type="number" placeholder="2" required />
+          <label for="trainerSelect">Trainer</label>
+          <select id="trainerSelect" required>
+            <option value="">Select trainer…</option>
+          </select>
         </div>
         <div class="form-group">
-          <label for="memberId">Member ID</label>
-          <input id="memberId" type="number" placeholder="1" required />
+          <label for="memberSelect">Member</label>
+          <select id="memberSelect" required>
+            <option value="">Select member…</option>
+          </select>
         </div>
         <div class="form-group full">
           <label for="exercises">Exercises</label>
@@ -54,8 +58,10 @@
     <h2>View Member's Workout Plan</h2>
     <div class="row">
       <div class="form-group" style="flex:1;min-width:140px;">
-        <label for="lookupId">Member ID</label>
-        <input id="lookupId" type="number" placeholder="1" />
+        <label for="lookupMemberSelect">Member</label>
+        <select id="lookupMemberSelect">
+          <option value="">Select member…</option>
+        </select>
       </div>
       <button id="lookupBtn" class="btn btn-secondary">Look Up</button>
     </div>
@@ -76,13 +82,36 @@
 <script>
   const session = requireRole(['ADMIN', 'TRAINER', 'MEMBER']);
   if (!session) throw new Error('redirect');
+  const trainerSelect = document.getElementById('trainerSelect');
+  const memberSelect = document.getElementById('memberSelect');
+  const lookupMemberSelect = document.getElementById('lookupMemberSelect');
 
   const canCreateWorkout = hasAnyRole(['ADMIN', 'TRAINER']);
   document.getElementById('createWorkoutCard').style.display = canCreateWorkout ? '' : 'none';
 
-  if (session.role === 'TRAINER') {
-    document.getElementById('trainerId').value = session.id;
-    document.getElementById('trainerId').readOnly = true;
+  async function initSelectors() {
+    const members = await searchUsers({ role: 'MEMBER', limit: 50 });
+    const memberOptions = ['<option value="">Select member…</option>'];
+    members.forEach(member => {
+      memberOptions.push(`<option value="${member.id}">${member.name} (${member.email})</option>`);
+    });
+
+    memberSelect.innerHTML = memberOptions.join('');
+    lookupMemberSelect.innerHTML = memberOptions.join('');
+
+    if (session.role === 'TRAINER') {
+      trainerSelect.innerHTML = `<option value="${session.id}">${session.name || session.email}</option>`;
+      trainerSelect.value = String(session.id);
+      trainerSelect.disabled = true;
+      return;
+    }
+
+    const trainers = await searchUsers({ role: 'TRAINER', limit: 50 });
+    const trainerOptions = ['<option value="">Select trainer…</option>'];
+    trainers.forEach(trainer => {
+      trainerOptions.push(`<option value="${trainer.id}">${trainer.name} (${trainer.email})</option>`);
+    });
+    trainerSelect.innerHTML = trainerOptions.join('');
   }
 
   const difficultyBadge = { BEGINNER: 'badge-green', INTERMEDIATE: 'badge-yellow', ADVANCED: 'badge-red' };
@@ -91,8 +120,8 @@
     e.preventDefault();
     try {
       const data = await createWorkout({
-        trainerId:       +document.getElementById('trainerId').value,
-        memberId:        +document.getElementById('memberId').value,
+        trainerId:       +trainerSelect.value,
+        memberId:        +memberSelect.value,
         exercises:        document.getElementById('exercises').value,
         schedule:         document.getElementById('schedule').value,
         difficultyLevel:  document.getElementById('difficulty').value,
@@ -104,8 +133,8 @@
 
   document.getElementById('lookupBtn').addEventListener('click', async () => {
     const isMember = session.role === 'MEMBER';
-    const id = document.getElementById('lookupId').value;
-    if (!isMember && !id) return toast('Enter a member ID', 'err');
+    const id = lookupMemberSelect.value;
+    if (!isMember && !id) return toast('Select a member', 'err');
     try {
       const d = isMember ? await getMyWorkout() : await getWorkout(id);
       const planCard  = document.getElementById('planCard');
@@ -127,11 +156,15 @@
   });
 
   if (session.role === 'MEMBER') {
-    const lookupGroup = document.getElementById('lookupId').closest('.form-group');
+    const lookupGroup = lookupMemberSelect.closest('.form-group');
     if (lookupGroup) lookupGroup.style.display = 'none';
     document.getElementById('lookupBtn').textContent = 'Load My Plan';
     document.getElementById('lookupBtn').click();
   }
+
+  initSelectors().catch(err => {
+    toast(err.message || 'Unable to load workout selectors', 'err');
+  });
 </script>
 </body>
 </html>
