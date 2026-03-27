@@ -56,8 +56,10 @@
     <form id="updateForm">
       <div class="form-grid">
         <div class="form-group">
-          <label for="userId">User ID</label>
-          <input id="userId" type="number" placeholder="1" required />
+          <label for="userSelect">User</label>
+          <select id="userSelect" required>
+            <option value="">Select user…</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="newName">New Name</label>
@@ -98,6 +100,15 @@
       <option value="MEMBER">Member</option>`;
   }
 
+  async function loadUserOptions() {
+    const users = await searchUsers({ limit: 50 });
+    const options = ['<option value="">Select user…</option>'];
+    users.forEach(user => {
+      options.push(`<option value="${user.id}">${user.name} (${user.email}) - ${user.role}</option>`);
+    });
+    document.getElementById('userSelect').innerHTML = options.join('');
+  }
+
   document.getElementById('registerForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
@@ -111,12 +122,14 @@
       showResult(data);
       toast(`User "${data.name}" registered (ID: ${data.id})`);
       e.target.reset();
+      await loadUserOptions();
     } catch (err) { toast(err.message, 'err'); }
   });
 
   document.getElementById('updateForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const uid = document.getElementById('userId').value;
+    const uid = document.getElementById('userSelect').value;
+    if (!uid) return toast('Select a user', 'err');
     try {
       const data = await updateProfile(uid, {
         name:     document.getElementById('newName').value || undefined,
@@ -133,6 +146,10 @@
     document.getElementById('resultCard').style.display = '';
     document.getElementById('resultPre').textContent = JSON.stringify(data, null, 2);
   }
+
+  loadUserOptions().catch(err => {
+    toast(err.message || 'Unable to load users', 'err');
+  });
 </script>
 </body>
 </html>
