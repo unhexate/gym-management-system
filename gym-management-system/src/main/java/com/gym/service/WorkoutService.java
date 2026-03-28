@@ -13,7 +13,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Workout plan service – extends {@link BaseCrudService} (Template Method pattern).
@@ -107,5 +111,23 @@ public class WorkoutService extends BaseCrudService<WorkoutPlan, Long> {
             throw new AccessDeniedException("Trainer can only access workout plans for their own members");
         }
         return plan;
+    }
+
+    public List<Member> getManageableMembersForTrainer(Long trainerId) {
+        Map<Long, Long> assignedTrainerByMemberId = workoutPlanRepository.findAll().stream()
+                .filter(plan -> plan.getMember() != null && plan.getMember().getId() != null)
+                .collect(Collectors.toMap(
+                        plan -> plan.getMember().getId(),
+                        plan -> plan.getTrainer() != null ? plan.getTrainer().getId() : null,
+                        (first, second) -> second
+                ));
+
+        return memberRepository.findAll().stream()
+                .filter(member -> {
+                    Long assignedTrainerId = assignedTrainerByMemberId.get(member.getId());
+                    return assignedTrainerId == null || trainerId.equals(assignedTrainerId);
+                })
+                .sorted(Comparator.comparing(Member::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 }

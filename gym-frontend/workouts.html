@@ -90,7 +90,9 @@
   document.getElementById('createWorkoutCard').style.display = canCreateWorkout ? '' : 'none';
 
   async function initSelectors() {
-    const members = await searchUsers({ role: 'MEMBER', limit: 50 });
+    const members = session.role === 'TRAINER'
+      ? await getMyManageableMembers()
+      : await searchUsers({ role: 'MEMBER', limit: 50 });
     const memberOptions = ['<option value="">Select member…</option>'];
     members.forEach(member => {
       memberOptions.push(`<option value="${member.id}">${member.name} (${member.email})</option>`);

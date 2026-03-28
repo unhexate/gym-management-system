@@ -1,7 +1,9 @@
 package com.gym.controller;
 
 import com.gym.dto.CreateWorkoutRequest;
+import com.gym.dto.UserLookupResponse;
 import com.gym.exception.ApiResponse;
+import com.gym.exception.BadRequestException;
 import com.gym.model.User;
 import com.gym.model.WorkoutPlan;
 import com.gym.service.UserService;
@@ -14,6 +16,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 /**
  * REST controller for workout plan management.
@@ -73,5 +76,20 @@ public class WorkoutController {
         User currentUser = userService.findByEmail(principal.getName());
         WorkoutPlan plan = workoutService.getByMember(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(plan));
+    }
+
+    /** GET /api/workouts/manageable-members – trainer gets members they can manage */
+    @GetMapping("/manageable-members")
+    public ResponseEntity<ApiResponse<List<UserLookupResponse>>> getManageableMembers(Principal principal) {
+        User currentUser = userService.findByEmail(principal.getName());
+        if (!"TRAINER".equalsIgnoreCase(currentUser.getRole())) {
+            throw new BadRequestException("Only trainers can use /api/workouts/manageable-members");
+        }
+
+        List<UserLookupResponse> members = workoutService.getManageableMembersForTrainer(currentUser.getId())
+                .stream()
+                .map(UserLookupResponse::from)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(members));
     }
 }

@@ -65,6 +65,7 @@ function getMyPayments()                { return get('/api/payments/me'); }
 function createWorkout(data)            { return post('/api/workouts', data); }
 function getWorkout(memberId)           { return get(`/api/workouts/member/${memberId}`); }
 function getMyWorkout()                 { return get('/api/workouts/me'); }
+function getMyManageableMembers()       { return get('/api/workouts/manageable-members'); }
 
 // ── Attendance ─────────────────────────────────────────
 function markAttendance(data)           { return post('/api/attendance', data); }

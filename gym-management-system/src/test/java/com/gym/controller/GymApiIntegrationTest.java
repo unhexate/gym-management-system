@@ -597,4 +597,45 @@ class GymApiIntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(2))))
                 .andExpect(jsonPath("$.data[0].planName").exists());
     }
+
+            @Test
+            @Order(28)
+            @DisplayName("GET /api/workouts/manageable-members – trainer sees own or unassigned members only")
+            void trainerGetsManageableMembersOnly() throws Exception {
+            Long trainerOne = createTrainer("Vik", "vik2@gym.com");
+            Long trainerTwo = createTrainer("Wren", "wren2@gym.com");
+            Long memberOwn = createMember("Xena", "xena2@gym.com");
+            Long memberOther = createMember("Yash", "yash2@gym.com");
+            Long memberUnassigned = createMember("Zara", "zara2@gym.com");
+
+            mockMvc.perform(post("/api/workouts")
+                    .with(user("vik2@gym.com").roles("TRAINER"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body(Map.of(
+                        "trainerId", trainerOne,
+                        "memberId", memberOwn,
+                        "exercises", "Lunge",
+                        "schedule", "Mon",
+                        "difficultyLevel", "BEGINNER"))))
+                .andExpect(status().isCreated());
+
+            mockMvc.perform(post("/api/workouts")
+                    .with(user("wren2@gym.com").roles("TRAINER"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body(Map.of(
+                        "trainerId", trainerTwo,
+                        "memberId", memberOther,
+                        "exercises", "Plank",
+                        "schedule", "Tue",
+                        "difficultyLevel", "BEGINNER"))))
+                .andExpect(status().isCreated());
+
+            mockMvc.perform(get("/api/workouts/manageable-members")
+                    .with(user("vik2@gym.com").roles("TRAINER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[*].id", hasItem(memberOwn.intValue())))
+                .andExpect(jsonPath("$.data[*].id", hasItem(memberUnassigned.intValue())))
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(memberOther.intValue()))));
+            }
 }
