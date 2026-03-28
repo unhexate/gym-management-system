@@ -249,8 +249,38 @@ class GymApiIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+                    @Test
+                    @Order(12)
+                    @DisplayName("GET /api/memberships/member/{id} – trainer cannot access unassigned member membership")
+                    void trainerCannotAccessMembershipForUnassignedMember() throws Exception {
+                    Long trainerOne = createTrainer("Aria", "aria2@gym.com");
+                        createTrainer("Bram", "bram2@gym.com");
+                    Long memberId = createMember("Cleo", "cleo2@gym.com");
+                    Long planId = seedPlan("BASIC", 1, 100.0);
+
+                    mockMvc.perform(post("/api/memberships")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body(Map.of("memberId", memberId, "planId", planId))))
+                        .andExpect(status().isCreated());
+
+                    mockMvc.perform(post("/api/workouts")
+                            .with(user("aria2@gym.com").roles("TRAINER"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body(Map.of(
+                                "trainerId", trainerOne,
+                                "memberId", memberId,
+                                "exercises", "Core",
+                                "schedule", "Mon",
+                                "difficultyLevel", "BEGINNER"))))
+                        .andExpect(status().isCreated());
+
+                    mockMvc.perform(get("/api/memberships/member/" + memberId)
+                            .with(user("bram2@gym.com").roles("TRAINER")))
+                        .andExpect(status().isForbidden());
+                    }
+
     @Test
-    @Order(12)
+                    @Order(13)
     @DisplayName("POST /api/memberships/me/purchase – member buys membership and creates payment request")
     void memberPurchasesMembershipWithPaymentRequest() throws Exception {
         Long memberId = createMember("Paul", "paul@gym.com");
@@ -272,7 +302,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(13)
+        @Order(14)
     @DisplayName("POST /api/payments – process payment returns 201")
     void processPayment() throws Exception {
         Long memberId = createMember("Dave", "dave2@gym.com");
@@ -297,7 +327,7 @@ class GymApiIntegrationTest {
     }
 
         @Test
-        @Order(14)
+        @Order(15)
         @DisplayName("POST /api/payments/request – member submits payment request as pending")
         void memberSubmitsPaymentRequest() throws Exception {
         Long memberId = createMember("Eve", "eve2@gym.com");
@@ -321,7 +351,7 @@ class GymApiIntegrationTest {
         }
 
         @Test
-        @Order(15)
+        @Order(16)
         @DisplayName("PUT /api/payments/{id}/status – staff approves pending request")
         void staffApprovesPendingPaymentRequest() throws Exception {
         Long memberId = createMember("Finn", "finn2@gym.com");
@@ -353,7 +383,7 @@ class GymApiIntegrationTest {
         }
 
         @Test
-        @Order(16)
+        @Order(17)
         @DisplayName("GET /api/payments/member/{id} – returns payment history list")
         void paymentHistory() throws Exception {
         Long memberId = createMember("Eve", "eve2@gym.com");
@@ -379,7 +409,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(17)
+        @Order(18)
     @DisplayName("POST /api/workouts – trainer creates workout plan returns 201")
     void createWorkout() throws Exception {
         Long memberId  = createMember("Frank",  "frank2@gym.com");
@@ -399,7 +429,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(18)
+    @Order(19)
     @DisplayName("POST /api/workouts – trainer cannot create plan for another trainer id")
     void trainerCannotCreateForAnotherTrainerId() throws Exception {
         Long memberId  = createMember("Liam", "liam2@gym.com");
@@ -418,7 +448,7 @@ class GymApiIntegrationTest {
     }
 
                     @Test
-                    @Order(19)
+                    @Order(20)
                     @DisplayName("POST /api/workouts – trainer cannot overwrite member assigned to another trainer")
                     void trainerCannotOverwriteMemberAssignedToAnotherTrainer() throws Exception {
                     Long memberId   = createMember("Sara", "sara2@gym.com");
@@ -449,7 +479,7 @@ class GymApiIntegrationTest {
                     }
 
     @Test
-                    @Order(20)
+                    @Order(21)
     @DisplayName("GET /api/workouts/member/{id} – returns member workout plan")
     void getWorkout() throws Exception {
         Long memberId  = createMember("Hank",  "hank2@gym.com");
@@ -469,7 +499,7 @@ class GymApiIntegrationTest {
     }
 
         @Test
-    @Order(21)
+    @Order(22)
         @DisplayName("GET /api/workouts/member/{id} – trainer cannot view unassigned member plan")
         void trainerCannotViewUnassignedMemberPlan() throws Exception {
         Long memberId   = createMember("Nia", "nia2@gym.com");
@@ -493,7 +523,7 @@ class GymApiIntegrationTest {
         }
 
         @Test
-        @Order(22)
+        @Order(23)
         @DisplayName("GET /api/workouts/me – member gets own workout plan")
         void memberGetsOwnWorkoutViaMeEndpoint() throws Exception {
         Long memberId  = createMember("Quin", "quin2@gym.com");
@@ -521,7 +551,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(23)
+        @Order(24)
     @DisplayName("POST /api/attendance – marks attendance returns 201")
     void markAttendance() throws Exception {
         Long memberId = createMember("Jack", "jack2@gym.com");
@@ -534,7 +564,7 @@ class GymApiIntegrationTest {
     }
 
             @Test
-            @Order(24)
+            @Order(25)
             @DisplayName("GET /api/attendance/member/{id} – returns attendance history list")
             void getAttendanceHistory() throws Exception {
             Long memberId = createMember("Ken", "ken2@gym.com");
@@ -554,7 +584,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(25)
+        @Order(26)
     @DisplayName("GET /api/reports – returns summary report (Facade Pattern)")
     void getReport() throws Exception {
         mockMvc.perform(get("/api/reports"))
@@ -566,7 +596,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(26)
+    @Order(27)
     @DisplayName("GET /api/users/search – staff can search members without sensitive fields")
     void searchUsersForMemberLookup() throws Exception {
         createMember("Ava Stone", "ava2@gym.com");
@@ -584,7 +614,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(27)
+    @Order(28)
     @DisplayName("GET /api/memberships/plans – authenticated user can load plan options")
     void getMembershipPlansForSelectors() throws Exception {
         seedPlan("BASIC", 1, 100.0);
@@ -599,7 +629,7 @@ class GymApiIntegrationTest {
     }
 
             @Test
-            @Order(28)
+            @Order(29)
             @DisplayName("GET /api/workouts/manageable-members – trainer sees own or unassigned members only")
             void trainerGetsManageableMembersOnly() throws Exception {
             Long trainerOne = createTrainer("Vik", "vik2@gym.com");

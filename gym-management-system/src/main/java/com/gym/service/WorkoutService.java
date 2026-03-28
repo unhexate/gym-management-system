@@ -130,4 +130,10 @@ public class WorkoutService extends BaseCrudService<WorkoutPlan, Long> {
                 .sorted(Comparator.comparing(Member::getName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
+
+    public boolean isMemberAssignedToTrainer(Long trainerId, Long memberId) {
+        return workoutPlanRepository.findByMemberId(memberId)
+                .map(plan -> plan.getTrainer() != null && trainerId.equals(plan.getTrainer().getId()))
+                .orElse(false);
+    }
 }

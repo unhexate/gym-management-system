@@ -13,10 +13,13 @@ import com.gym.model.User;
 import com.gym.service.MembershipService;
 import com.gym.service.PaymentService;
 import com.gym.service.UserService;
+import com.gym.service.WorkoutService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -35,6 +38,7 @@ public class MembershipController {
     private final MembershipService membershipService;
     private final PaymentService paymentService;
     private final UserService userService;
+    private final WorkoutService workoutService;
 
     /** POST /api/memberships – enroll a member in a plan (Strategy + Template Method) */
     @PostMapping
@@ -82,7 +86,19 @@ public class MembershipController {
     /** GET /api/memberships/member/{memberId} – get active membership for member */
     @GetMapping("/member/{memberId}")
     public ResponseEntity<ApiResponse<Membership>> getActiveMembership(
-            @PathVariable Long memberId) {
+            @PathVariable Long memberId,
+            Principal principal,
+            Authentication authentication) {
+        boolean trainerRequest = authentication != null
+                && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_TRAINER".equals(a.getAuthority()));
+
+        if (trainerRequest) {
+            User currentUser = userService.findByEmail(principal.getName());
+            if (!workoutService.isMemberAssignedToTrainer(currentUser.getId(), memberId)) {
+            throw new AccessDeniedException("Trainer can only access memberships for assigned members");
+            }
+        }
+
         Membership membership = membershipService.getActiveMembership(memberId);
         return ResponseEntity.ok(ApiResponse.success(membership));
     }
