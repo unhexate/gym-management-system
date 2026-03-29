@@ -4,6 +4,7 @@ import com.gym.dto.CreateUserRequest;
 import com.gym.dto.UserLookupResponse;
 import com.gym.dto.UpdateProfileRequest;
 import com.gym.exception.BadRequestException;
+import com.gym.exception.ConflictException;
 import com.gym.exception.ResourceNotFoundException;
 import com.gym.model.User;
 
@@ -38,7 +39,7 @@ public class UserService {
         validateCreatorRolePolicy(targetRole, creatorRole);
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("Email already registered: " + request.getEmail());
+            throw new ConflictException("Email already registered: " + request.getEmail());
         }
 
         // Factory Pattern: create the right User subclass without exposing constructors

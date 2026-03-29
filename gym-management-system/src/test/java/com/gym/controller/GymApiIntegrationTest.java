@@ -71,7 +71,7 @@ class GymApiIntegrationTest {
 
     @Test
     @Order(2)
-    @DisplayName("POST /api/users – duplicate email returns 400")
+    @DisplayName("POST /api/users – duplicate email returns 409")
     void registerDuplicateEmail() throws Exception {
         // first registration
         mockMvc.perform(post("/api/users")
@@ -83,8 +83,9 @@ class GymApiIntegrationTest {
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(Map.of("name","B","email","dup@gym.com","phone","2","password","p","role","MEMBER"))))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message", containsString("Email already registered")));
     }
 
     @Test
@@ -95,7 +96,9 @@ class GymApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(Map.of("name","X","email","x@gym.com","phone","1","password","p"))))
                 // role is missing
-                .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.message", containsString("role")));
     }
 
     @Test
@@ -146,7 +149,9 @@ class GymApiIntegrationTest {
         mockMvc.perform(put("/api/users/9999/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(Map.of("name","X"))))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("User")));
     }
 
     // ------------------------------------------------------------------
@@ -246,7 +251,8 @@ class GymApiIntegrationTest {
 
         mockMvc.perform(get("/api/memberships/member/" + memberId)
                         .with(user("noah@gym.com").roles("MEMBER")))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
     }
 
                     @Test

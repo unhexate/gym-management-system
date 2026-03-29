@@ -2,7 +2,7 @@ package com.gym.service;
 
 import com.gym.dto.CreateUserRequest;
 import com.gym.dto.UpdateProfileRequest;
-import com.gym.exception.BadRequestException;
+import com.gym.exception.ConflictException;
 import com.gym.exception.ResourceNotFoundException;
 import com.gym.model.Member;
 import com.gym.model.User;
@@ -51,11 +51,11 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("registerUser throws BadRequestException when email already exists")
+    @DisplayName("registerUser throws ConflictException when email already exists")
     void registerUserDuplicateEmail() {
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
-        assertThrows(BadRequestException.class,
+        assertThrows(ConflictException.class,
             () -> userService.registerUser(buildRequest("MEMBER"), "ADMIN"));
         verify(userRepository, never()).save(any());
     }

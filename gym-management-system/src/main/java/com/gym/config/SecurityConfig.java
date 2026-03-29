@@ -43,6 +43,26 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .httpBasic(httpBasic -> {})
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"success\":false,\"data\":null,\"message\":\"Authentication required\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    String message = accessDeniedException.getMessage();
+                    if (message == null || message.isBlank()) {
+                        message = "You do not have permission to perform this action.";
+                    }
+                    String escapedMessage = message
+                            .replace("\\", "\\\\")
+                            .replace("\"", "\\\"");
+                    response.setStatus(403);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"success\":false,\"data\":null,\"message\":\"" + escapedMessage + "\"}");
+                    response.getWriter().flush();
+                })
+            )
             .authorizeHttpRequests(auth -> auth
 
                 // ── /api/users/me – any authenticated user can fetch their own info
@@ -75,7 +95,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,  "/api/workouts/member/**").hasAnyRole("ADMIN", "TRAINER")
 
                 // ── Attendance
-                .requestMatchers(HttpMethod.POST, "/api/attendance").hasAnyRole("ADMIN", "RECEPTIONIST")
+                .requestMatchers(HttpMethod.POST, "/api/attendance").hasAnyRole("ADMIN", "RECEPTIONIST", "TRAINER")
                 .requestMatchers(HttpMethod.GET,  "/api/attendance/me").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET,  "/api/attendance/member/**").hasAnyRole("ADMIN", "RECEPTIONIST", "TRAINER")
 
