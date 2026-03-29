@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Work is actively progressing with incremental conventional commits. P2 selector migration is now largely implemented across backend and frontend.
+Work is actively progressing with incremental conventional commits. P1 ownership and P2 selector migration are now substantially complete.
 
 ## Completed (Committed)
 
@@ -58,18 +58,32 @@ Work is actively progressing with incremental conventional commits. P2 selector 
     - Replaced update-profile user ID input with user selector.
     - Refreshes selector options after user registration.
 
+11. `d4d5e4f` — **chore(progress): record selector migration and ownership slices**
+   - Updated implementation status with the latest completed slices.
+
+12. `e9936f8` — **feat(assignments): add trainer-manageable member selectors**
+   - Added trainer-manageable member resolution in workout service.
+   - Added `GET /api/workouts/manageable-members` for trainer-scoped selectors.
+   - Wired trainer selectors in workouts and attendance to assignment-scoped member data.
+   - Added integration coverage for manageable-members filtering behavior.
+
+13. `dfd6156` — **feat(membership): enforce trainer ownership on member lookup**
+   - Added trainer ownership enforcement on `GET /api/memberships/member/{memberId}`.
+   - Prevented trainers from accessing memberships of members assigned to other trainers.
+   - Added integration test for forbidden cross-trainer membership lookup.
+
 ## Remaining Work (Priority)
 
 ### P1 — Security/Ownership Completion
 - Enforce trainer/member ownership constraints for workouts (assigned-member checks). ✅
-- Add equivalent ownership constraints for membership lookup where policy requires.
+- Add equivalent ownership constraints for membership lookup where policy requires. ✅
 
 ### P1 — Payment Domain Completion
 - Implement explicit member payment submission flow (request/checkout) instead of only staff-recorded flow.
 - Add payment status lifecycle (`PENDING/APPROVED/REJECTED`) if request model is adopted.
 
 ### P2 — Remove Manual ID Dependence
-- Replace raw ID entry UX with search/select endpoints (`users/search`, active membership resolver, assignment-based lists). (mostly done; assignment-scoped lists pending)
+- Replace raw ID entry UX with search/select endpoints (`users/search`, active membership resolver, assignment-based lists). ✅
 - Wire frontend forms to selector-based resolution. (done for users/membership/payments/workouts/attendance)
 
 ### P2 — Error Contract Consistency
@@ -82,7 +96,7 @@ Work is actively progressing with incremental conventional commits. P2 selector 
 
 ## Note To Self (Next Session)
 
-- Next focus: **assignment-based member lists** for trainer-scoped selector data (backend + frontend wiring).
+- Next focus: **error contract consistency** (`403/404/validation/conflict` envelope and tests).
 - Keep incremental commit discipline:
   - one feature slice per commit,
   - conventional commit format,
