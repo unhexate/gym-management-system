@@ -72,6 +72,11 @@ Work is actively progressing with incremental conventional commits. P1 ownership
    - Prevented trainers from accessing memberships of members assigned to other trainers.
    - Added integration test for forbidden cross-trainer membership lookup.
 
+14. `120fd49` — **feat(errors): standardize conflict and forbidden error contracts**
+   - Added explicit `ConflictException` and mapped duplicate-email conflicts to HTTP `409`.
+   - Standardized framework-level `401/403` responses to structured API error envelopes.
+   - Extended integration/service tests for `403/404/409/validation` contract assertions.
+
 ## Remaining Work (Priority)
 
 ### P1 — Security/Ownership Completion
@@ -87,8 +92,8 @@ Work is actively progressing with incremental conventional commits. P1 ownership
 - Wire frontend forms to selector-based resolution. (done for users/membership/payments/workouts/attendance)
 
 ### P2 — Error Contract Consistency
-- Standardize backend error envelope fields and status semantics across controllers.
-- Add contract tests for `403`, `404`, validation, and conflict scenarios.
+- Standardize backend error envelope fields and status semantics across controllers. ✅
+- Add contract tests for `403`, `404`, validation, and conflict scenarios. ✅
 
 ### P3 — Auth Hardening
 - Migrate from Basic Auth + plaintext browser session to token-based auth.
