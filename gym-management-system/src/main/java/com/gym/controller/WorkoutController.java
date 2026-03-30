@@ -86,10 +86,7 @@ public class WorkoutController {
             throw new BadRequestException("Only trainers can use /api/workouts/manageable-members");
         }
 
-        List<UserLookupResponse> members = workoutService.getManageableMembersForTrainer(currentUser.getId())
-                .stream()
-                .map(UserLookupResponse::from)
-                .toList();
+        List<UserLookupResponse> members = workoutService.getManageableMembersForTrainer(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(members));
     }
 }

@@ -1,6 +1,7 @@
 package com.gym.dto;
 
 import com.gym.model.User;
+import com.gym.repository.UserLookupProjection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,6 +14,10 @@ public class UserLookupResponse {
     private String role;
 
     public static UserLookupResponse from(User user) {
+        return new UserLookupResponse(user.getId(), user.getName(), user.getEmail(), user.getRole());
+    }
+
+    public static UserLookupResponse from(UserLookupProjection user) {
         return new UserLookupResponse(user.getId(), user.getName(), user.getEmail(), user.getRole());
     }
 }

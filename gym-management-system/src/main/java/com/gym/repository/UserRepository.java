@@ -26,4 +26,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> searchUsers(@Param("role") String role,
                            @Param("query") String query,
                            Pageable pageable);
+
+    @Query(value = """
+            SELECT id, name, email, role
+            FROM users
+            WHERE role = :role
+            ORDER BY name ASC
+            """, nativeQuery = true)
+    List<UserLookupProjection> findLookupByRole(@Param("role") String role);
 }

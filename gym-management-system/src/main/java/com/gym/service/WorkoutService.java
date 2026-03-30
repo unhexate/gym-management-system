@@ -1,12 +1,14 @@
 package com.gym.service;
 
 import com.gym.exception.ResourceNotFoundException;
+import com.gym.dto.UserLookupResponse;
 import com.gym.model.Member;
 import com.gym.model.Trainer;
 import com.gym.model.WorkoutPlan;
 
 import com.gym.repository.MemberRepository;
 import com.gym.repository.TrainerRepository;
+import com.gym.repository.UserRepository;
 import com.gym.repository.WorkoutPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -29,6 +31,7 @@ public class WorkoutService extends BaseCrudService<WorkoutPlan, Long> {
     private final WorkoutPlanRepository workoutPlanRepository;
     private final TrainerRepository trainerRepository;
     private final MemberRepository memberRepository;
+    private final UserRepository userRepository;
 
     // -------------------------------------------------------------------------
     // Template Method – abstract step implementations
@@ -113,21 +116,21 @@ public class WorkoutService extends BaseCrudService<WorkoutPlan, Long> {
         return plan;
     }
 
-    public List<Member> getManageableMembersForTrainer(Long trainerId) {
-        Map<Long, Long> assignedTrainerByMemberId = workoutPlanRepository.findAll().stream()
-                .filter(plan -> plan.getMember() != null && plan.getMember().getId() != null)
-                .collect(Collectors.toMap(
-                        plan -> plan.getMember().getId(),
-                        plan -> plan.getTrainer() != null ? plan.getTrainer().getId() : null,
+        public List<UserLookupResponse> getManageableMembersForTrainer(Long trainerId) {
+        Map<Long, Long> assignedTrainerByMemberId = workoutPlanRepository.findMemberTrainerAssignments().stream()
+            .collect(Collectors.toMap(
+                row -> (Long) row[0],
+                row -> (Long) row[1],
                         (first, second) -> second
                 ));
 
-        return memberRepository.findAll().stream()
-                .filter(member -> {
-                    Long assignedTrainerId = assignedTrainerByMemberId.get(member.getId());
+        return userRepository.findLookupByRole("MEMBER").stream()
+            .filter(member -> {
+                Long assignedTrainerId = assignedTrainerByMemberId.get(member.getId());
                     return assignedTrainerId == null || trainerId.equals(assignedTrainerId);
                 })
-                .sorted(Comparator.comparing(Member::getName, String.CASE_INSENSITIVE_ORDER))
+            .map(UserLookupResponse::from)
+            .sorted(Comparator.comparing(UserLookupResponse::getName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
