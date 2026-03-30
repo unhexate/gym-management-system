@@ -33,6 +33,26 @@
     </form>
   </div>
 
+  <div class="card">
+    <h2>Mark Check-Out</h2>
+    <form id="checkoutForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="checkoutMemberSelect">Member</label>
+          <select id="checkoutMemberSelect" required>
+            <option value="">Select member…</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="checkoutTime">Check-Out Time</label>
+          <input id="checkoutTime" type="time" required />
+        </div>
+      </div>
+      <br />
+      <button type="submit" class="btn btn-primary">Mark Check-Out</button>
+    </form>
+  </div>
+
   <!-- Attendance history -->
   <div class="card">
     <h2>Attendance History</h2>
@@ -48,10 +68,10 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>ID</th><th>Member ID</th><th>Date</th><th>Check-In Time</th></tr>
+          <tr><th>ID</th><th>Member ID</th><th>Date</th><th>Check-In Time</th><th>Check-Out Time</th></tr>
         </thead>
         <tbody id="logBody">
-          <tr><td colspan="4" class="empty" style="text-align:center;">No history loaded yet.</td></tr>
+          <tr><td colspan="5" class="empty" style="text-align:center;">No history loaded yet.</td></tr>
         </tbody>
       </table>
     </div>
@@ -65,13 +85,17 @@
   const session = requireRole(['ADMIN', 'RECEPTIONIST', 'TRAINER']);
   if (!session) throw new Error('redirect');
   const memberSelect = document.getElementById('memberSelect');
+  const checkoutMemberSelect = document.getElementById('checkoutMemberSelect');
   const historyMemberSelect = document.getElementById('historyMemberSelect');
 
   // Pre-fill datetime to now
   (function () {
-    const el = document.getElementById('checkinTime');
+    const checkinEl = document.getElementById('checkinTime');
+    const checkoutEl = document.getElementById('checkoutTime');
     const now = new Date();
-    el.value = now.toTimeString().slice(0, 5);
+    const nowTime = now.toTimeString().slice(0, 5);
+    checkinEl.value = nowTime;
+    checkoutEl.value = nowTime;
   })();
 
   document.getElementById('attendanceForm').addEventListener('submit', async e => {
@@ -86,6 +110,22 @@
       historyMemberSelect.value = String(memberId);
       loadHistory(memberId);
     } catch (err) { toast(err.message, 'err'); }
+  });
+
+  document.getElementById('checkoutForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const memberId = +checkoutMemberSelect.value;
+    if (!memberId) return toast('Select a member', 'err');
+    const checkoutTime = document.getElementById('checkoutTime').value;
+    try {
+      await markCheckout({ memberId, checkoutTime });
+      toast(`Checkout marked for member ${memberId}`);
+      checkoutMemberSelect.value = '';
+      historyMemberSelect.value = String(memberId);
+      loadHistory(memberId);
+    } catch (err) {
+      toast(err.message, 'err');
+    }
   });
 
   document.getElementById('historyBtn').addEventListener('click', () => {
@@ -103,6 +143,7 @@
       options.push(`<option value="${member.id}">${member.name} (${member.email})</option>`);
     });
     memberSelect.innerHTML = options.join('');
+    checkoutMemberSelect.innerHTML = options.join('');
     historyMemberSelect.innerHTML = options.join('');
   }
 
@@ -111,7 +152,7 @@
     try {
       const rows = await getAttendance(memberId);
       if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty" style="text-align:center;">No attendance history found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty" style="text-align:center;">No attendance history found.</td></tr>';
         return;
       }
       tbody.innerHTML = rows.map(r => `
@@ -120,9 +161,10 @@
           <td>${r.member?.id ?? '—'}</td>
           <td>${r.date ?? '—'}</td>
           <td>${r.checkinTime ?? '—'}</td>
+          <td>${r.checkoutTime ?? '—'}</td>
         </tr>`).join('');
     } catch (err) {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty" style="text-align:center;">Unable to load history.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty" style="text-align:center;">Unable to load history.</td></tr>';
       toast(err.message, 'err');
     }
   }

@@ -96,6 +96,7 @@ public class SecurityConfig {
 
                 // ── Attendance
                 .requestMatchers(HttpMethod.POST, "/api/attendance").hasAnyRole("ADMIN", "RECEPTIONIST", "TRAINER")
+                .requestMatchers(HttpMethod.PUT,  "/api/attendance/checkout").hasAnyRole("ADMIN", "RECEPTIONIST", "TRAINER")
                 .requestMatchers(HttpMethod.GET,  "/api/attendance/me").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET,  "/api/attendance/member/**").hasAnyRole("ADMIN", "RECEPTIONIST", "TRAINER")
 

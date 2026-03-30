@@ -69,6 +69,7 @@ function getMyManageableMembers()       { return get('/api/workouts/manageable-m
 
 // ── Attendance ─────────────────────────────────────────
 function markAttendance(data)           { return post('/api/attendance', data); }
+function markCheckout(data)             { return put('/api/attendance/checkout', data); }
 function getAttendance(memberId)        { return get(`/api/attendance/member/${memberId}`); }
 function getMyAttendance()              { return get('/api/attendance/me'); }
 

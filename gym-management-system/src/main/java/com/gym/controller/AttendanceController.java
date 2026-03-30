@@ -1,5 +1,6 @@
 package com.gym.controller;
 
+import com.gym.dto.MarkCheckoutRequest;
 import com.gym.dto.MarkAttendanceRequest;
 import com.gym.exception.ApiResponse;
 import com.gym.exception.BadRequestException;
@@ -36,6 +37,15 @@ public class AttendanceController {
                 request.getMemberId(), request.getCheckinTime());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(attendance, "Attendance marked successfully"));
+    }
+
+    /** PUT /api/attendance/checkout – mark check-out for today's open attendance */
+    @PutMapping("/checkout")
+    public ResponseEntity<ApiResponse<Attendance>> markCheckout(
+            @Valid @RequestBody MarkCheckoutRequest request) {
+        Attendance attendance = attendanceService.markCheckout(
+                request.getMemberId(), request.getCheckoutTime());
+        return ResponseEntity.ok(ApiResponse.success(attendance, "Checkout marked successfully"));
     }
 
         /** GET /api/attendance/member/{memberId} – attendance history for a member */

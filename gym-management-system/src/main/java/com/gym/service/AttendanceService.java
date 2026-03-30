@@ -79,6 +79,25 @@ public class AttendanceService extends BaseCrudService<Attendance, Long> {
         return create(attendance); // delegate to Template Method
     }
 
+    @Transactional
+    public Attendance markCheckout(Long memberId, String checkoutTimeStr) {
+        memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member", memberId));
+
+        Attendance attendance = attendanceRepository
+                .findTopByMemberIdAndDateAndCheckoutTimeIsNullOrderByCheckinTimeDesc(memberId, LocalDate.now())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No open attendance record found for member id: " + memberId + " on today's date"));
+
+        LocalTime checkoutTime = LocalTime.parse(checkoutTimeStr);
+        if (checkoutTime.isBefore(attendance.getCheckinTime())) {
+            throw new IllegalArgumentException("checkoutTime cannot be earlier than checkinTime");
+        }
+
+        attendance.setCheckoutTime(checkoutTime);
+        return save(attendance);
+    }
+
     public List<Attendance> getAttendanceByMember(Long memberId) {
         return attendanceRepository.findByMemberIdOrderByDateDesc(memberId);
     }

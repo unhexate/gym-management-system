@@ -571,6 +571,25 @@ class GymApiIntegrationTest {
 
             @Test
             @Order(25)
+            @DisplayName("PUT /api/attendance/checkout – marks checkout on open attendance")
+            void markCheckout() throws Exception {
+            Long memberId = createMember("Jill", "jill2@gym.com");
+
+            mockMvc.perform(post("/api/attendance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body(Map.of("memberId", memberId, "checkinTime", "09:30"))))
+                .andExpect(status().isCreated());
+
+            mockMvc.perform(put("/api/attendance/checkout")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body(Map.of("memberId", memberId, "checkoutTime", "18:00"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.checkoutTime").value("18:00:00"));
+            }
+
+            @Test
+                @Order(26)
             @DisplayName("GET /api/attendance/member/{id} – returns attendance history list")
             void getAttendanceHistory() throws Exception {
             Long memberId = createMember("Ken", "ken2@gym.com");
@@ -590,7 +609,7 @@ class GymApiIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-        @Order(26)
+        @Order(27)
     @DisplayName("GET /api/reports – returns summary report (Facade Pattern)")
     void getReport() throws Exception {
         mockMvc.perform(get("/api/reports"))
@@ -602,7 +621,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(27)
+    @Order(28)
     @DisplayName("GET /api/users/search – staff can search members without sensitive fields")
     void searchUsersForMemberLookup() throws Exception {
         createMember("Ava Stone", "ava2@gym.com");
@@ -620,7 +639,7 @@ class GymApiIntegrationTest {
     }
 
     @Test
-    @Order(28)
+    @Order(29)
     @DisplayName("GET /api/memberships/plans – authenticated user can load plan options")
     void getMembershipPlansForSelectors() throws Exception {
         seedPlan("BASIC", 1, 100.0);
@@ -635,7 +654,7 @@ class GymApiIntegrationTest {
     }
 
             @Test
-            @Order(29)
+            @Order(30)
             @DisplayName("GET /api/workouts/manageable-members – trainer sees own or unassigned members only")
             void trainerGetsManageableMembersOnly() throws Exception {
             Long trainerOne = createTrainer("Vik", "vik2@gym.com");

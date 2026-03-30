@@ -29,4 +29,7 @@ public class Attendance {
 
     @Column(name = "checkin_time", nullable = false)
     private LocalTime checkinTime;
+
+    @Column(name = "checkout_time")
+    private LocalTime checkoutTime;
 }
