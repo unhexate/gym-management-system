@@ -1,7 +1,6 @@
 package com.gym.repository;
 
 import com.gym.model.User;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,17 +14,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
 
-    @Query("""
-            SELECT u FROM User u
-            WHERE (:role IS NULL OR UPPER(u.role) = UPPER(:role))
+    @Query(value = """
+            SELECT id, name, email, role
+            FROM users
+            WHERE (:role IS NULL OR UPPER(role) = UPPER(:role))
               AND (:query IS NULL
-                   OR LOWER(u.name) LIKE LOWER(CONCAT('%', :query, '%'))
-                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')))
-            ORDER BY u.name ASC
-            """)
-    List<User> searchUsers(@Param("role") String role,
-                           @Param("query") String query,
-                           Pageable pageable);
+                   OR LOWER(name) LIKE LOWER('%' || :query || '%')
+                   OR LOWER(email) LIKE LOWER('%' || :query || '%'))
+            ORDER BY name ASC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<UserLookupProjection> searchUsers(@Param("role") String role,
+                                           @Param("query") String query,
+                                           @Param("limit") int limit);
+
+    @Query(value = """
+            SELECT id, name, email, role
+            FROM users
+            WHERE email = :email
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<UserLookupProjection> findLookupByEmail(@Param("email") String email);
 
     @Query(value = """
             SELECT id, name, email, role

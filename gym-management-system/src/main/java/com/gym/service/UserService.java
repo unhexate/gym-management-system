@@ -10,8 +10,6 @@ import com.gym.model.User;
 
 import com.gym.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,12 +76,17 @@ public class UserService {
         int normalizedLimit = Math.max(1, Math.min(limit, 50));
         String normalizedRole = normalizeOptionalRole(role);
         String normalizedQuery = (query == null || query.isBlank()) ? null : query.trim();
-        Pageable pageable = PageRequest.of(0, normalizedLimit);
 
-        return userRepository.searchUsers(normalizedRole, normalizedQuery, pageable)
+        return userRepository.searchUsers(normalizedRole, normalizedQuery, normalizedLimit)
                 .stream()
                 .map(UserLookupResponse::from)
                 .toList();
+    }
+
+    public UserLookupResponse findLookupByEmail(String email) {
+        return userRepository.findLookupByEmail(email)
+                .map(UserLookupResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
 
     private String normalizeRole(String role) {

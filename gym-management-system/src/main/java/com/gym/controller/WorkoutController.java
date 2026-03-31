@@ -5,7 +5,6 @@ import com.gym.dto.UserLookupResponse;
 import com.gym.dto.WorkoutPlanResponse;
 import com.gym.exception.ApiResponse;
 import com.gym.exception.BadRequestException;
-import com.gym.model.User;
 import com.gym.model.WorkoutPlan;
 import com.gym.service.UserService;
 import com.gym.service.WorkoutService;
@@ -37,7 +36,7 @@ public class WorkoutController {
     public ResponseEntity<ApiResponse<WorkoutPlan>> createWorkout(
             @Valid @RequestBody CreateWorkoutRequest request,
             Principal principal) {
-        User currentUser = userService.findByEmail(principal.getName());
+        UserLookupResponse currentUser = userService.findLookupByEmail(principal.getName());
         if ("TRAINER".equalsIgnoreCase(currentUser.getRole())
                 && !currentUser.getId().equals(request.getTrainerId())) {
             throw new AccessDeniedException("Trainer can only create workout plans for their own trainerId");
@@ -59,7 +58,7 @@ public class WorkoutController {
     public ResponseEntity<ApiResponse<WorkoutPlanResponse>> getWorkout(
             @PathVariable Long memberId,
             Principal principal) {
-        User currentUser = userService.findByEmail(principal.getName());
+        UserLookupResponse currentUser = userService.findLookupByEmail(principal.getName());
 
         WorkoutPlanResponse plan;
         if ("TRAINER".equalsIgnoreCase(currentUser.getRole())) {
@@ -74,7 +73,7 @@ public class WorkoutController {
     /** GET /api/workouts/me – member views their own workout plan */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<WorkoutPlanResponse>> getMyWorkout(Principal principal) {
-        User currentUser = userService.findByEmail(principal.getName());
+        UserLookupResponse currentUser = userService.findLookupByEmail(principal.getName());
         WorkoutPlanResponse plan = workoutService.getViewByMember(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(plan));
     }
@@ -82,7 +81,7 @@ public class WorkoutController {
     /** GET /api/workouts/manageable-members – trainer gets members they can manage */
     @GetMapping("/manageable-members")
     public ResponseEntity<ApiResponse<List<UserLookupResponse>>> getManageableMembers(Principal principal) {
-        User currentUser = userService.findByEmail(principal.getName());
+        UserLookupResponse currentUser = userService.findLookupByEmail(principal.getName());
         if (!"TRAINER".equalsIgnoreCase(currentUser.getRole())) {
             throw new BadRequestException("Only trainers can use /api/workouts/manageable-members");
         }

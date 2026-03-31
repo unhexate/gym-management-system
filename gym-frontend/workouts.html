@@ -90,6 +90,10 @@
   document.getElementById('createWorkoutCard').style.display = canCreateWorkout ? '' : 'none';
 
   async function initSelectors() {
+    if (session.role === 'MEMBER') {
+      return;
+    }
+
     const members = session.role === 'TRAINER'
       ? await getMyManageableMembers()
       : await searchUsers({ role: 'MEMBER', limit: 50 });
