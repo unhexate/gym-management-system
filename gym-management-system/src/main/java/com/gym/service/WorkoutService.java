@@ -1,5 +1,6 @@
 package com.gym.service;
 
+import com.gym.dto.WorkoutPlanResponse;
 import com.gym.exception.ResourceNotFoundException;
 import com.gym.dto.UserLookupResponse;
 import com.gym.model.Member;
@@ -108,12 +109,32 @@ public class WorkoutService extends BaseCrudService<WorkoutPlan, Long> {
                         "No workout plan found for member id: " + memberId));
     }
 
+        public WorkoutPlanResponse getViewByMember(Long memberId) {
+        return workoutPlanRepository.findViewByMemberId(memberId)
+            .map(WorkoutPlanResponse::from)
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "No workout plan found for member id: " + memberId));
+        }
+
     public WorkoutPlan getByMemberForTrainer(Long trainerId, Long memberId) {
         WorkoutPlan plan = getByMember(memberId);
         if (plan.getTrainer() == null || !trainerId.equals(plan.getTrainer().getId())) {
             throw new AccessDeniedException("Trainer can only access workout plans for their own members");
         }
         return plan;
+    }
+
+    public WorkoutPlanResponse getViewByMemberForTrainer(Long trainerId, Long memberId) {
+        if (!workoutPlanRepository.existsByMemberId(memberId)) {
+            throw new ResourceNotFoundException("No workout plan found for member id: " + memberId);
+        }
+        if (!workoutPlanRepository.existsByMemberIdAndTrainerId(memberId, trainerId)) {
+            throw new AccessDeniedException("Trainer can only access workout plans for their own members");
+        }
+
+        return workoutPlanRepository.findViewByMemberIdAndTrainerId(memberId, trainerId)
+                .map(WorkoutPlanResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Workout plan not found"));
     }
 
         public List<UserLookupResponse> getManageableMembersForTrainer(Long trainerId) {

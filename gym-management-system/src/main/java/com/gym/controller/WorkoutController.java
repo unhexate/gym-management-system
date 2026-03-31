@@ -2,6 +2,7 @@ package com.gym.controller;
 
 import com.gym.dto.CreateWorkoutRequest;
 import com.gym.dto.UserLookupResponse;
+import com.gym.dto.WorkoutPlanResponse;
 import com.gym.exception.ApiResponse;
 import com.gym.exception.BadRequestException;
 import com.gym.model.User;
@@ -55,16 +56,16 @@ public class WorkoutController {
 
     /** GET /api/workouts/member/{memberId} – member views their workout schedule */
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<ApiResponse<WorkoutPlan>> getWorkout(
+    public ResponseEntity<ApiResponse<WorkoutPlanResponse>> getWorkout(
             @PathVariable Long memberId,
             Principal principal) {
         User currentUser = userService.findByEmail(principal.getName());
 
-        WorkoutPlan plan;
+        WorkoutPlanResponse plan;
         if ("TRAINER".equalsIgnoreCase(currentUser.getRole())) {
-            plan = workoutService.getByMemberForTrainer(currentUser.getId(), memberId);
+            plan = workoutService.getViewByMemberForTrainer(currentUser.getId(), memberId);
         } else {
-            plan = workoutService.getByMember(memberId);
+            plan = workoutService.getViewByMember(memberId);
         }
 
         return ResponseEntity.ok(ApiResponse.success(plan));
@@ -72,9 +73,9 @@ public class WorkoutController {
 
     /** GET /api/workouts/me – member views their own workout plan */
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<WorkoutPlan>> getMyWorkout(Principal principal) {
+    public ResponseEntity<ApiResponse<WorkoutPlanResponse>> getMyWorkout(Principal principal) {
         User currentUser = userService.findByEmail(principal.getName());
-        WorkoutPlan plan = workoutService.getByMember(currentUser.getId());
+        WorkoutPlanResponse plan = workoutService.getViewByMember(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(plan));
     }
 
