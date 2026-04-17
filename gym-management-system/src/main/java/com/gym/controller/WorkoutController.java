@@ -33,7 +33,7 @@ public class WorkoutController {
 
     /** POST /api/workouts – trainer creates a workout plan for a member */
     @PostMapping
-    public ResponseEntity<ApiResponse<WorkoutPlan>> createWorkout(
+    public ResponseEntity<ApiResponse<WorkoutPlanResponse>> createWorkout(
             @Valid @RequestBody CreateWorkoutRequest request,
             Principal principal) {
         UserLookupResponse currentUser = userService.findLookupByEmail(principal.getName());
@@ -49,8 +49,16 @@ public class WorkoutController {
                 request.getSchedule(),
                 request.getDifficultyLevel()
         );
+        WorkoutPlanResponse response = new WorkoutPlanResponse(
+                plan.getId(),
+                UserLookupResponse.from(plan.getTrainer()),
+                UserLookupResponse.from(plan.getMember()),
+                plan.getExercises(),
+                plan.getSchedule(),
+                plan.getDifficultyLevel()
+        );
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(plan, "Workout plan created successfully"));
+                .body(ApiResponse.success(response, "Workout plan created successfully"));
     }
 
     /** GET /api/workouts/member/{memberId} – member views their workout schedule */

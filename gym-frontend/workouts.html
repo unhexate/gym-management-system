@@ -122,6 +122,23 @@
 
   const difficultyBadge = { BEGINNER: 'badge-green', INTERMEDIATE: 'badge-yellow', ADVANCED: 'badge-red' };
 
+  function formatWorkoutValue(key, value) {
+    if (value == null) return '—';
+
+    if ((key === 'trainer' || key === 'member') && typeof value === 'object') {
+      const userName = value.name || 'Unknown';
+      const userId = value.id != null ? `#${value.id}` : '—';
+      const userEmail = value.email || '—';
+      return `${userName} (${userId}, ${userEmail})`;
+    }
+
+    if (typeof value === 'object') {
+      return `<pre style="font-size:0.8rem;white-space:pre-wrap;">${JSON.stringify(value, null, 2)}</pre>`;
+    }
+
+    return String(value);
+  }
+
   document.getElementById('workoutForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
@@ -149,7 +166,7 @@
       document.getElementById('planBody').innerHTML = Object.entries(d).map(([k, v]) => {
         const display = k === 'difficultyLevel'
           ? `<span class="badge ${difficultyBadge[v] || 'badge-blue'}">${v}</span>`
-          : (v ?? '—');
+          : formatWorkoutValue(k, v);
         return `<tr><td><strong>${k}</strong></td><td>${display}</td></tr>`;
       }).join('');
       planCard.style.display = '';
